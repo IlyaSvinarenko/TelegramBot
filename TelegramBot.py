@@ -13,26 +13,31 @@ bot = Bot(token=bot_token)
 dp = Dispatcher()
 
 
-# OWNER_ID =
+@dp.message(Command(commands=['help', 'start']))
+async def help(message: Message):
+    await message.answer('Команда /menu открывает меню функций в чате.\n'
+                         'слева в меню - название функции бота\n'
+                         'справа - состояния (1-включена | 0-выключена)\n'
+                         'Нажатие на функцию меняет ее состояние в данном чате\n\n'
+                         'Функция table_users: Бот отслеживает и удаляет участников чата, которые были неактивны в '
+                         'течении 30-ти дней\n\n'
+                         'Функция nums_fact: В ответ на целое положительное число, отправленное в чат, бот пришлет 2-3 '
+                         'факта связанных с этим числом\n\n'
+                         'Функция weather: В ответ на отправленное в чат название населенного пункта, бот пришлет '
+                         'погоду в данном населенном пункте\n\n')
+
+
 @dp.message(Command(commands=['menu']))
 async def menu(message: Message):
-    """ Создает инлайн_меню, кнопки вида 'Имя_функции - Включена/выключена'  """
     sql_table = SqlManagerTableUsers.TableManager()
-    funcs_on = []
-    funcs_off = []
+    funcs = []
     for func, state in sql_table.get_all_funcs_info_in_chat(message.chat.id).items():
-        if state:
-            funcs_on.append(func)
-        else:
-            funcs_off.append(func)
+        funcs.append(str(func) + ' ' + str(state))
     inline_menu = InlineKeyboardMarkup(row_width=2,
                                        inline_keyboard=[
-                                           [InlineKeyboardButton(text=f'{func_on} - On',
-                                                                 callback_data=f'{func_on} on')
-                                            for func_on in funcs_on],
-                                           [InlineKeyboardButton(text=f'{func_off} - Off',
-                                                                 callback_data=f'{func_off} off')
-                                            for func_off in funcs_off]])
+                                           [InlineKeyboardButton(text=f'{func}',
+                                                                 callback_data=f'{func}')
+                                            ] for func in funcs])
     await message.answer('Functions  -  status', reply_markup=inline_menu)
 
 
@@ -41,11 +46,14 @@ async def callback_from_menu(call: CallbackQuery):
     """ В зависимости от того что было нажато в инлайн_меню изменяет значения в таблице funcs
     на 1 или 0 (вкл/выкл)"""
     sql_table_funcs = SqlManagerTableUsers.TableManager()
-    call_data = call.data.split()  # [0] - func name, [1] - on or off
-    if call_data[1] == 'on':
+    call_data = call.data.split()  # [0] - func name, [1] - 1 or 0   (on/off)
+    if call_data[1] == '1':
         sql_table_funcs.turn_off(call.message.chat.id, call_data[0])
-    elif call_data[1] == 'off':
+    elif call_data[1] == '0':
         sql_table_funcs.turn_on(call.message.chat.id, call_data[0])
+    await bot.delete_message(call.message.chat.id, call.message.message_id)
+    time.sleep(1)
+    await menu(call.message)
 
 
 @dp.message()
@@ -55,9 +63,9 @@ async def definition_func(message: Message):
     sql_table_funcs = SqlManagerTableUsers.TableManager()
     if message.chat.type != 'private' and sql_table_funcs.is_active_func(message.chat.id, 'table_users'):
         await action_with_table_users(message)
-    elif message.text.isdigit() and sql_table_funcs.is_active_func(message.chat.id, 'nums_fact'):
+    if message.text.isdigit() and sql_table_funcs.is_active_func(message.chat.id, 'nums_fact'):
         await nums_facts(message)
-    elif sql_table_funcs.is_active_func(message.chat.id, 'weather'):
+    if sql_table_funcs.is_active_func(message.chat.id, 'weather'):
         await get_weather(message)
 
 
@@ -98,7 +106,7 @@ async def get_weather(message: Message):
     try:
         await bot.send_message(message.chat.id, Weather.get_weather(message.text))
     except:
-        await bot.send_message(message.chat.id, 'Я ждал название города, кажется что-то пошло не так')
+        print('При включенной функции weather, вероятно было введено не название населенного пункта')
 
 
 dp.run_polling(bot)
