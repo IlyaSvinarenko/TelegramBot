@@ -84,6 +84,10 @@ class TableManager:
                 set_of_users_id_name_chat.add((user_id, user_name, chat_id))
         return set_of_users_id_name_chat
 
+    def del_user(self, user_id):
+        self.coursor.execute(f"DELETE FROM users WHERE user_id = {user_id}")
+        return self.connect.commit()
+
     def list_of_users_to_remove(self):
         """ Проверяет таблицу users на наличие юзеров у которых
         время_предупреждения_об_удалении(deletion_warning_time) старее одного дня,
