@@ -11,21 +11,30 @@ translator = Translator(to_lang='ru')
 bot_token = os.environ.get('Son_of_Ilya_bot')
 bot = Bot(token=bot_token)
 dp = Dispatcher(bot)
-
+pollid_chatid_dic = {}
 
 @dp.message_handler(content_types=['poll'])
 async def on_poll_created(message: types.Message):
+    await definition_func(message)
+    await bot.delete_message(message.chat.id, message.message_id)
+    time.sleep(1)
     poll = message.poll
-    chat = message.chat
-    await bot.send_message(chat.id, f"Голосование создано! Описание: {poll.question}")
+    pollid_chatid_dic[poll.id] = message.chat.id
+    print(pollid_chatid_dic)
+    discription = poll.question + f" (by {message.from_user.username})"
+    await bot.send_poll(chat_id=message.chat.id,
+                        question=str(discription),
+                        options=[i.text for i in poll.options],
+                        is_anonymous=poll.is_anonymous,
+                        type=poll.type,
+                        allows_multiple_answers=poll.allows_multiple_answers)
+
 
 @dp.poll_answer_handler()
 async def handle_poll_answer(poll_answer: types.PollAnswer):
     # Выводим информацию о голосовании в консоль
-    print('qweqweqrw')
-    print(f"Получен ответ на опрос {poll_answer.poll_id} в чате {poll_answer.user.id}")
-
-
+    if int(next(iter(pollid_chatid_dic.keys()))) == int(poll_answer.poll_id) + 1:
+        print(poll_answer.poll_id)
 
 '''////////////////////////////////////////////////////////////'''
 
