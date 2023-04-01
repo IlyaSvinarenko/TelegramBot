@@ -92,7 +92,6 @@ async def callback_from_menu(call: CallbackQuery):
 
 @dp.message_handler()
 async def definition_func(message: Message):
-    await message.answer(message.content_type)
     """ Перехватывает все сообщения и в зависимости от того какая функция чата сейчас включена,
     передает сообщение в функии дальше"""
     sql_table_funcs = SqlManagerTableUsers.TableManager()
