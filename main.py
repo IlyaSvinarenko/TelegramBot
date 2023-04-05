@@ -1,10 +1,7 @@
-import SqlManagerTableUsers, NumsFacts, Weather, time, os
+import SqlTables, NumsFacts, Weather, os, GPT, MenuTelegram
 from translate import Translator
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import Message, ContentType, PollAnswer, ChatPermissions
-from aiogram.types import ReplyKeyboardRemove, \
-    ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, \
-    InlineKeyboardButton, CallbackQuery
+from aiogram.types import Message, CallbackQuery
 from aiogram.utils import executor
 
 translator = Translator(to_lang='ru')
@@ -12,39 +9,29 @@ bot_token = os.environ.get('Son_of_Ilya_bot')
 bot = Bot(token=bot_token)
 dp = Dispatcher(bot)
 
+in_creating_context = {}
 
-@dp.message_handler(content_types=['poll'])
-async def on_poll_created(message: types.Message):
-    poll = message.poll
-    chat = message.chat
-    await bot.send_message(chat.id, f"Голосование создано! Описание: {poll.question}")
-
-@dp.poll_answer_handler()
-async def handle_poll_answer(poll_answer: types.PollAnswer):
-    # Выводим информацию о голосовании в консоль
-    print('qweqweqrw')
-    print(f"Получен ответ на опрос {poll_answer.poll_id} в чате {poll_answer.user.id}")
+'''/////////////// Перехватчики команд для вызовов меню и колбеков от меню //////////////////'''
 
 
+@dp.message_handler(commands=['contexts'])
+async def get_contexts_menu(message: Message):
+    await MenuTelegram.contexts_menu(message)
 
-'''////////////////////////////////////////////////////////////'''
+
+@dp.callback_query_handler(lambda query: query.data.startswith('contexts'))
+async def callback_from_contexts_menus(call: CallbackQuery):
+    in_creating_context[str(call.message.chat.id)] = await MenuTelegram.callback_from_contexts_menu(call)
 
 
+@dp.message_handler(commands=['menu'])
+async def get_funcs_menu(message: Message):
+    await MenuTelegram.funcs_menu(message)
 
 
-@dp.message_handler(content_types=['new_chat_members', 'left_chat_member'])
-async def on_user_join(message: types.Message):
-    sql_table_funcs = SqlManagerTableUsers.TableManager()
-    for user in message.new_chat_members:
-        await bot.send_message(message.chat.id, f"Добро пожаловать на борт '{message.chat.title}', {user.first_name}!"
-                                                f"")
-        if sql_table_funcs.is_active_func(message.chat.id, 'table_users'):
-            await action_with_table_users(user_id=user['id'], chat_id=message.chat.id, username=user['username'],
-                                          first_name=user['first_name'])
-    if message.left_chat_member:
-        await bot.send_message(message.chat.id, f"Интернет тебе пухом.\n Пусть другие чаты будут к тебе добрее чем мы,"
-                                                f" {message.left_chat_member.first_name}!")
-        sql_table_funcs.del_user(message.left_chat_member.id)
+@dp.callback_query_handler(lambda query: query.data.startswith('funcs'))
+async def call_back_funcs_menu(call: CallbackQuery):
+    await MenuTelegram.callback_from_funcs_menu(call)
 
 
 @dp.message_handler(commands=['help', 'start'])
@@ -58,43 +45,34 @@ async def help(message: Message):
                          'Функция nums_fact: В ответ на целое положительное число, отправленное в чат, бот пришлет 2-3 '
                          'факта связанных с этим числом\n\n'
                          'Функция weather: В ответ на отправленное в чат название населенного пункта, бот пришлет '
-                         'погоду в данном населенном пункте\n\n')
+                         'погоду в данном населенном пункте\n\n'
+                         'Функция openai включает возможности ИИ от одноименной компании для '
+                         'общения в чате (модель: gpt-3.5-turbo)')
+
+'''/////////////// Перехватчик обновлений добавления и удаления юзеров из чата //////////////////'''
+
+@dp.message_handler(content_types=['new_chat_members', 'left_chat_member'])
+async def on_user_join(message: types.Message):
+    sql_table_funcs = SqlTables.TableManager()
+    for user in message.new_chat_members:
+        await bot.send_message(message.chat.id, f"Добро пожаловать на борт '{message.chat.title}', {user.first_name}!"
+                                                f"")
+        if sql_table_funcs.is_active_func(message.chat.id, 'table_users'):
+            await action_with_table_users(user_id=user['id'], chat_id=message.chat.id, username=user['username'],
+                                          first_name=user['first_name'])
+    if message.left_chat_member:
+        await bot.send_message(message.chat.id, f"Интернет тебе пухом.\n Пусть другие чаты будут к тебе добрее чем мы,"
+                                                f" {message.left_chat_member.first_name}!")
+        sql_table_funcs.del_user(message.left_chat_member.id)
 
 
-@dp.message_handler(commands=['menu'])
-async def menu(message: Message):
-    sql_table = SqlManagerTableUsers.TableManager()
-    funcs = []
-    for func, state in sql_table.get_all_funcs_info_in_chat(message.chat.id).items():
-        funcs.append(str(func) + ' ' + str(state))
-    inline_menu = InlineKeyboardMarkup(row_width=2,
-                                       inline_keyboard=[
-                                           [InlineKeyboardButton(text=f'{func}',
-                                                                 callback_data=f'{func}')
-                                            ] for func in funcs])
-    await message.answer('Functions  -  status', reply_markup=inline_menu)
-
-
-@dp.callback_query_handler(lambda call: call)
-async def callback_from_menu(call: CallbackQuery):
-    """ В зависимости от того что было нажато в инлайн_меню изменяет значения в таблице funcs
-    на 1 или 0 (вкл/выкл)"""
-    sql_table_funcs = SqlManagerTableUsers.TableManager()
-    call_data = call.data.split()  # [0] - func name, [1] - 1 or 0   (on/off)
-    if call_data[1] == '1':
-        sql_table_funcs.turn_off(call.message.chat.id, call_data[0])
-    elif call_data[1] == '0':
-        sql_table_funcs.turn_on(call.message.chat.id, call_data[0])
-    await bot.delete_message(call.message.chat.id, call.message.message_id)
-    time.sleep(1)
-    await menu(call.message)
-
+'''/////////////// Перехватчик сообщений и функции обработки сообщений //////////////////'''
 
 @dp.message_handler()
 async def definition_func(message: Message):
     """ Перехватывает все сообщения и в зависимости от того какая функция чата сейчас включена,
     передает сообщение в функии дальше"""
-    sql_table_funcs = SqlManagerTableUsers.TableManager()
+    sql_table_funcs = SqlTables.TableManager()
     if message.chat.type != 'private' and sql_table_funcs.is_active_func(message.chat.id, 'table_users'):
         await action_with_table_users(user_id=message.from_user.id, chat_id=message.chat.id, username=
         message.from_user.username, first_name=message.from_user.first_name)
@@ -103,15 +81,25 @@ async def definition_func(message: Message):
             await nums_facts(message)
         if sql_table_funcs.is_active_func(message.chat.id, 'weather'):
             await get_weather(message)
-    elif message.content_type == 'left_chat_member':
-        sql_table = SqlManagerTableUsers.TableManager()
-        print(message.left_chat_member)
+        if sql_table_funcs.is_active_func(message.chat.id, 'openai'):
+            await openai_chatting(message)
+
+
+
+async def openai_chatting(message):
+    if in_creating_context.get(str(message.chat.id)) == 1:
+        gpt_answer = await GPT.get_response(message.text, message.chat.id, in_creating_process=1)
+        in_creating_context[str(message.chat.id)] = 0
+        await message.answer(gpt_answer)
+    else:
+        gpt_answer = await GPT.get_response(message.text, message.chat.id)
+        await message.answer(gpt_answer)
 
 
 async def action_with_table_users(user_id, chat_id, username, first_name):
     """ Если включена:
      обновляет данные о последней активности юзеров в чате, удаляет неактивных юзеров"""
-    sql_table = SqlManagerTableUsers.TableManager()
+    sql_table = SqlTables.TableManager()
     if sql_table.get_user_info(user_id):
         # Порядок заполненности (get_user_info):
         # [0]-user_id, [1]-date_time_UTC, [2]-user_name, [3] date_in_seсonds, [4] - chat_id,
@@ -150,4 +138,4 @@ async def get_weather(message: Message):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp)
+    executor.start_polling(dp, skip_updates=True)
