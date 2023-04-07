@@ -11,8 +11,6 @@ dp = Dispatcher(bot)
 
 in_creating_context = {}
 
-'''/////////////// Перехватчики команд для вызовов меню и колбеков от меню //////////////////'''
-
 
 @dp.message_handler(commands=['contexts'])
 async def get_contexts_menu(message: Message):
@@ -49,7 +47,6 @@ async def help(message: Message):
                          'Функция openai включает возможности ИИ от одноименной компании для '
                          'общения в чате (модель: gpt-3.5-turbo)')
 
-'''/////////////// Перехватчик обновлений добавления и удаления юзеров из чата //////////////////'''
 
 @dp.message_handler(content_types=['new_chat_members', 'left_chat_member'])
 async def on_user_join(message: types.Message):
@@ -66,8 +63,6 @@ async def on_user_join(message: types.Message):
         sql_table_funcs.del_user(message.left_chat_member.id)
 
 
-'''/////////////// Перехватчик сообщений и функции обработки сообщений //////////////////'''
-
 @dp.message_handler()
 async def definition_func(message: Message):
     """ Перехватывает все сообщения и в зависимости от того какая функция чата сейчас включена,
@@ -83,7 +78,6 @@ async def definition_func(message: Message):
             await get_weather(message)
         if sql_table_funcs.is_active_func(message.chat.id, 'openai'):
             await openai_chatting(message)
-
 
 
 async def openai_chatting(message):
