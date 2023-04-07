@@ -1,7 +1,7 @@
 import SqlTables, NumsFacts, Weather, os, GPT, MenuTelegram
 from translate import Translator
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ChatActions
 from aiogram.utils import executor
 
 translator = Translator(to_lang='ru')
@@ -87,11 +87,14 @@ async def definition_func(message: Message):
 
 
 async def openai_chatting(message):
+    await bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.TYPING)
     if in_creating_context.get(str(message.chat.id)) == 1:
+        await bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.TYPING)
         gpt_answer = await GPT.get_response(message.text, message.chat.id, in_creating_process=1)
         in_creating_context[str(message.chat.id)] = 0
         await message.answer(gpt_answer)
     else:
+        await bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.TYPING)
         gpt_answer = await GPT.get_response(message.text, message.chat.id)
         await message.answer(gpt_answer)
 
