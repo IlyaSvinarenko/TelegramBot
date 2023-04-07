@@ -1,6 +1,5 @@
 import openai, os, mongodb
 
-
 openai.api_key = os.environ.get('openai_api_key')
 
 current_contexts = {}
