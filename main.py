@@ -36,7 +36,8 @@ async def call_back_funcs_menu(call: CallbackQuery):
 
 @dp.message_handler(commands=['help', 'start'])
 async def help(message: Message):
-    await message.answer('Команда /menu открывает меню функций в чате.\n'
+    await message.answer('Commands:\n 1) /help \n 2) /menu \n 3) /contexts \n'
+                         'Команда /menu открывает меню функций в чате.\n'
                          'слева в меню - название функции бота\n'
                          'справа - состояния (1-включена | 0-выключена)\n'
                          'Нажатие на функцию меняет ее состояние в данном чате\n\n'
