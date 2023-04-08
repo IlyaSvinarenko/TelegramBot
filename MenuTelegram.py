@@ -1,6 +1,10 @@
-import mongodb, SqlTables, main, GPT, time
+import mongodb, SqlTables, main, GPT, time, logging, os
 from aiogram.types import Message, InlineKeyboardMarkup, \
     InlineKeyboardButton, CallbackQuery
+
+log_level = os.getenv("LOG_LEVEL", "INFO")
+logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message)s')
+
 
 '''//////////////// Дальше блок контекстовых меню /////////////'''
 
@@ -34,8 +38,7 @@ async def create_delete_menu(message: Message):
     if GPT.current_contexts.get(str(message.chat.id)):
         del GPT.current_contexts[str(message.chat.id)]
     buttons_names = [i[0] for i in contexts]
-    print(buttons_names)
-    print(contexts)
+    logging.info('columns: %s', buttons_names)
     inline_menu = InlineKeyboardMarkup(row_width=2, inline_keyboard=[
         [InlineKeyboardButton(text=f'{i}', callback_data=f'contexts delete {i}')] for i in buttons_names])
     back_to_context_menu = InlineKeyboardButton(text='Вернуться к выбору контекста', callback_data='contexts '
