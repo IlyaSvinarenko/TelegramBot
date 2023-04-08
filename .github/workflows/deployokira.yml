@@ -46,5 +46,5 @@ jobs:
           chmod 600 private_key.pem
           mkdir -p ~/.ssh
           ssh-keyscan $SERVER_IP >> ~/.ssh/known_hosts
-          ssh -i private_key.pem $SERVER_LOGIN@$SERVER_IP "sudo docker login ghcr.io -u ilyasvinarenko -p ${{ secrets.DEPLOY_TOKEN }} && sudo docker run -e OWM_api_key=${{ secrets.OWM_API_KEY }} -e openai_api_key=${{ secrets.OPENAI_API_KEY }} -e Son_of_Ilya_bot_id=${{ secrets.SON_OF_ILYA_BOT_ID }} -e Son_of_Ilya_bot=${{ secrets.SON_OF_ILYA_BOT }} ghcr.io/ilyasvinarenko/telegrambot:latest"
+          ssh -i private_key.pem $SERVER_LOGIN@$SERVER_IP "sudo docker login ghcr.io -u ilyasvinarenko -p ${{ secrets.DEPLOY_TOKEN }} && sudo docker run -d -e OWM_api_key=${{ secrets.OWM_API_KEY }} -e openai_api_key=${{ secrets.OPENAI_API_KEY }} -e Son_of_Ilya_bot_id=${{ secrets.SON_OF_ILYA_BOT_ID }} -e Son_of_Ilya_bot=${{ secrets.SON_OF_ILYA_BOT }} ghcr.io/ilyasvinarenko/telegrambot:latest"
           rm -f private_key.pem
