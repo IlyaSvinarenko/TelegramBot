@@ -46,5 +46,5 @@ jobs:
           chmod 600 private_key.pem
           mkdir -p ~/.ssh
           ssh-keyscan $SERVER_IP >> ~/.ssh/known_hosts
-          ssh -i private_key.pem $SERVER_LOGIN@$SERVER_IP "sudo docker login ghcr.io -u ilyasvinarenko -p ${{ secrets.DEPLOY_TOKEN }} && sudo docker run -it ghcr.io/ilyasvinarenko/telegrambot:latest"
+          ssh -i private_key.pem $SERVER_LOGIN@$SERVER_IP "sudo docker login ghcr.io -u ilyasvinarenko -p ${{ secrets.DEPLOY_TOKEN }} && sudo docker run ghcr.io/ilyasvinarenko/telegrambot:latest"
           rm -f private_key.pem
