@@ -169,8 +169,10 @@ class TableManager:
         Возвращает False если функция func в чате cat_id выключена"""
         try:
             is_active = self.coursor.execute(f"SELECT {func} FROM funcs WHERE chat_id = {cat_id}").fetchone()[0]
+            self.connect.commit()
             return is_active
         except:
+            self.connect.commit()
             return False
 
     def get_all_funcs_info_in_chat(self, chat_id):
@@ -181,7 +183,6 @@ class TableManager:
         info_about_chat_funcs = {}
         functions_names = []
         description = self.coursor.execute(f"SELECT * FROM funcs WHERE chat_id = {chat_id}").description
-        logging.info('columns: ', description)
         if self.coursor.execute(f"SELECT chat_id FROM funcs"
                                 f" WHERE chat_id = {chat_id}").fetchone() == None:
             self.coursor.execute("INSERT INTO funcs (chat_id) VALUES (?)", (chat_id,))
@@ -191,6 +192,7 @@ class TableManager:
         for name in functions_names:
             info_about_chat_funcs[name] = \
                 self.coursor.execute(f"SELECT {name} FROM funcs WHERE chat_id = {chat_id}").fetchone()[0]
+            logging.info('columns: %s', info_about_chat_funcs)
         return info_about_chat_funcs
 
     def add_func_column(self, func_name):
@@ -203,3 +205,4 @@ class TableManager:
 object = TableManager()
 object.create_table_funcs()
 object.create_table_users()
+object.add_func_column('openai')
