@@ -44,6 +44,5 @@ jobs:
         run: |
           echo "$SSH_PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
-          scp -i private_key.pem -r . $SERVER_LOGIN@$SERVER_IP:/path/to/your/app/directory
-          ssh -i private_key.pem $SERVER_LOGIN@$SERVER_IP "cd /path/to/your/app/directory && docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.DEPLOY_TOKEN }} && docker run -it ghcr.io/ilyasvinarenko/telegrambot:latest"
+          ssh -i private_key.pem $SERVER_LOGIN@$SERVER_IP "docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.DEPLOY_TOKEN }} && docker run -it ghcr.io/ilyasvinarenko/telegrambot:latest"
           rm -f private_key.pem
