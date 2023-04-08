@@ -29,7 +29,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/ilyasvinarenko/telegrambot:latest
+          tags: ghcr.io/ilyasvinarenko/telegrambot
 
       - name: Deploy to server
         env:
