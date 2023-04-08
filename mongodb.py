@@ -1,5 +1,9 @@
-import asyncio
+import os, logging
 from motor.motor_asyncio import AsyncIOMotorClient
+
+
+log_level = os.getenv("LOG_LEVEL", "INFO")
+logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message)s')
 
 
 class MongoForBotManager:
@@ -8,6 +12,7 @@ class MongoForBotManager:
         self.db = "chats_id"
 
     async def create_collection_chat_id(self, chat_id):
+        logging.info('in mongodb: create_collection_chat_id')
         '''collection name is (chat_id)
         it must to contained documents like ({context_name : context_text})'''
         client = AsyncIOMotorClient(self.uri)
@@ -16,6 +21,7 @@ class MongoForBotManager:
         client.close()
 
     async def create_context_in_collection(self, chat_id: str, list_of_dialog_dicts: list[dict]):
+        logging.info('in mongodb: create_context_in_collection')
         client = AsyncIOMotorClient(self.uri)
         collection = client[self.db][f"{chat_id}"]
         context_name = ' '.join(list_of_dialog_dicts[-1]['content'].split()[0:3:])
@@ -25,6 +31,7 @@ class MongoForBotManager:
         return context_name
 
     async def delete_collection_chat_id(self, chat_id):
+        logging.info('in mongodb: delete_collection_chat_id')
         '''delete collection by name'''
         client = AsyncIOMotorClient(self.uri)
         chats_id_db = client.get_database(self.db)
@@ -33,6 +40,7 @@ class MongoForBotManager:
         client.close()
 
     async def delete_context(self, chat_id, context_name):
+        logging.info('in mongodb: delete_context')
         client = AsyncIOMotorClient(self.uri)
         collection = client[f"{self.db}"][f"{chat_id}"]
         result = await collection.delete_one({f'{context_name}': {'$exists': True}})
@@ -40,6 +48,7 @@ class MongoForBotManager:
         return
 
     async def update_context(self, chat_id, context_name, dialog_dict):
+        logging.info('in mongodb: update_context')
         client = AsyncIOMotorClient(self.uri)
         collection = client[f"{self.db}"][f"{chat_id}"]
         documents = await collection.find_one({context_name: {'$exists': True}})
@@ -53,6 +62,7 @@ class MongoForBotManager:
         return
 
     async def get_all_collections(self):
+        logging.info('in mongodb: get_all_collections')
         client = AsyncIOMotorClient(self.uri)
         chats_id_db = client.get_database(self.db)
         col_name_list = await chats_id_db.list_collection_names()
@@ -60,6 +70,7 @@ class MongoForBotManager:
         return col_name_list
 
     async def get_contexts_data(self, chat_id):
+        logging.info('in mongodb: get_contexts_data')
         client = AsyncIOMotorClient(self.uri)
         collection = client[f"{self.db}"][f"{chat_id}"]
         contexts_names = []
@@ -75,6 +86,7 @@ class MongoForBotManager:
         return list(zip(contexts_names, contexts_text))
 
     async def get_context(self, chat_id, context_name):
+        logging.info('in mongodb: get_context')
         client = AsyncIOMotorClient(self.uri)
         collection = client[f"{self.db}"][f"{chat_id}"]
         document = await collection.find_one({context_name: {'$exists': True}})

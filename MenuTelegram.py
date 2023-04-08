@@ -28,19 +28,20 @@ async def contexts_menu(message: Message):
     await message.answer('Контексты в этом чате: ', reply_markup=inline_menu)
 
 
-async def delete_context_menu(message: Message):
+async def create_delete_menu(message: Message):
     obj = mongodb.MongoForBotManager()
     contexts = await obj.get_contexts_data(str(message.chat.id))
-    try:
+    if GPT.current_contexts.get(str(message.chat.id)):
         del GPT.current_contexts[str(message.chat.id)]
-    except:
-        pass
     buttons_names = [i[0] for i in contexts]
+    print(buttons_names)
+    print(contexts)
     inline_menu = InlineKeyboardMarkup(row_width=2, inline_keyboard=[
         [InlineKeyboardButton(text=f'{i}', callback_data=f'contexts delete {i}')] for i in buttons_names])
     back_to_context_menu = InlineKeyboardButton(text='Вернуться к выбору контекста', callback_data='contexts '
                                                                                                   'backtocontextmenu')
     inline_menu.add(back_to_context_menu)
+
     await message.answer('Выберите контекст для удаления: ', reply_markup=inline_menu)
 
 
@@ -60,7 +61,7 @@ async def callback_from_contexts_menu(call: CallbackQuery):
     elif call_text == 'delete':
         await main.bot.delete_message(call.message.chat.id, call.message.message_id)
         time.sleep(1)
-        await delete_context_menu(call.message)
+        await create_delete_menu(call.message)
     elif call_text == 'backtocontextmenu':
         await main.bot.delete_message(call.message.chat.id, call.message.message_id)
         time.sleep(1)
@@ -69,7 +70,8 @@ async def callback_from_contexts_menu(call: CallbackQuery):
         await obj.delete_context(call.message.chat.id, ' '.join(call_text.split()[1::]))
         await main.bot.delete_message(call.message.chat.id, call.message.message_id)
         time.sleep(1)
-        await delete_context_menu(call.message)
+        await create_delete_menu(call.message)
+        return 0
     else:
         await call.message.answer(f'Выбран контекст: {call_text}')
         GPT.current_contexts[str(call.message.chat.id)] = call_text

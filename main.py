@@ -1,4 +1,4 @@
-import SqlTables, NumsFacts, Weather, os, GPT, MenuTelegram
+import SqlTables, NumsFacts, Weather, os, GPT, MenuTelegram, logging
 from translate import Translator
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import Message, CallbackQuery, ChatActions
@@ -9,6 +9,12 @@ bot_token = os.environ.get('Son_of_Ilya_bot')
 bot = Bot(token=bot_token)
 dp = Dispatcher(bot)
 
+
+log_level = os.getenv("LOG_LEVEL", "INFO")
+logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message)s')
+
+dataclass_chat_funcs: dict[dict] = dict()
+
 in_creating_context = {}
 
 '''/////////////// Перехватчики команд для вызовов меню и колбеков от меню //////////////////'''
@@ -16,6 +22,10 @@ in_creating_context = {}
 
 @dp.message_handler(commands=['contexts'])
 async def get_contexts_menu(message: Message):
+    if in_creating_context.get(str(message.chat.id)):
+        in_creating_context[(str(message.chat.id))] = 0
+    if GPT.current_contexts.get(str(message.chat.id)):
+        del GPT.current_contexts[(str(message.chat.id))]
     await MenuTelegram.contexts_menu(message)
 
 
@@ -58,7 +68,7 @@ async def help(message: Message):
 async def on_user_join(message: types.Message):
     sql_table_funcs = SqlTables.TableManager()
     for user in message.new_chat_members:
-        await bot.send_message(message.chat.id, f"Добро пожаловать на борт '{message.chat.title}', {user.first_name}!"
+        await bot.send_message(message.chat.id, f"Добро пожаловать на борт '{message.chat.title}', @{user.username}!"
                                                 f"")
         if sql_table_funcs.is_active_func(message.chat.id, 'table_users'):
             await action_with_table_users(user_id=user['id'], chat_id=message.chat.id, username=user['username'],
@@ -140,7 +150,7 @@ async def get_weather(message: Message):
     try:
         await bot.send_message(message.chat.id, Weather.get_weather(message.text))
     except:
-        print('При включенной функции weather, вероятно было введено не название населенного пункта')
+        logging.info('При включенной функции weather, вероятно было введено не название населенного пункта')
 
 
 if __name__ == '__main__':

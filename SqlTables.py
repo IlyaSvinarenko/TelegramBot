@@ -1,5 +1,9 @@
-import sqlite3, os
+import sqlite3, os, logging
 import time
+
+log_level = os.getenv("LOG_LEVEL", "INFO")
+logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message)s')
+
 
 dataclass_chat_funcs: dict[dict] = dict()
 
@@ -22,11 +26,11 @@ class TableManager:
 
     def delete_table(self, table_name):
         self.coursor.execute(f"DROP TABLE IF EXISTS {table_name}")
-        print(" ТЫ ЗАЧЕМ ТАБЛИЦУ УДАЛИЛ!!?!?!?")
+        logging.info(" ТЫ ЗАЧЕМ ТАБЛИЦУ УДАЛИЛ!!?!?!?")
 
     def clear_table(self, table_name):
         self.coursor.execute(f"DELETE FROM {table_name}")
-        print(f"table {table_name} cleared")
+        logging.info(f"table {table_name} cleared")
         return self.connect.commit()
 
     """/////////////////////////// Дальше блок по таблице users ///////////////////////////////"""
@@ -35,16 +39,16 @@ class TableManager:
         current_time_sec = time.time()
         UTC_Current_time = time.strftime("%d/%m/%Y, %H:%M:%S", time.localtime(current_time_sec))
         if user_id == bot_id:  # Это чтобы бот не добавлял сам себя в таблицу
-            print("Ой, я пытался сам себя занести в таблицу")
+            logging.info("Ой, я пытался сам себя занести в таблицу")
             return
         try:
             self.coursor.execute("INSERT INTO users "
                                  "(user_id, date_time_UTC, user_name, date_in_seconds, chat_id, deletion_warning_time)"
                                  " VALUES (?, ?, ?, ?, ?, ?)",
                                  (user_id, UTC_Current_time, username, current_time_sec, chat_id, 0))
-            print(f'user {username}  id: {user_id} added to data base\n with datetime: {UTC_Current_time}')
+            logging.info(f'user {username}  id: {user_id} added to data base\n with datetime: {UTC_Current_time}')
         except sqlite3.Error as error:
-            print("Error", error)
+            logging.info("Error", error)
             return False
         return self.connect.commit()
 
@@ -65,7 +69,7 @@ class TableManager:
                              "user_id = ?",
                              (UTC_Current_time, current_time_sec, chat_id, user_id))
         username = self.coursor.execute(f"SELECT user_name FROM users WHERE user_id = {user_id}")
-        print(f"data_time_UTC updated for user {username.fetchone()[0]} in table 'users'")
+        logging.info(f"data_time_UTC updated for user {username.fetchone()[0]} in table 'users'")
         return self.connect.commit()
 
     def find_not_active_users(self, chat_id):
@@ -122,7 +126,7 @@ class TableManager:
             deletion_warning_time REAL);""")
             self.connect.commit()
         except sqlite3.Error as error:
-            print("ERROR", error)
+            logging.info("ERROR", error)
 
     """/////////////////////////// Дальше блок по таблице funcs ///////////////////////////////"""
 
@@ -138,7 +142,7 @@ class TableManager:
             openai INT NOT NULL DEFAULT 0);""")
             self.connect.commit()
         except sqlite3.Error as error:
-            print('Error:', error)
+            logging.info('Error:', error)
 
     def turn_on(self, chat_id, func):
         """ Задает значение == 1 в поле func, где чат_ай-ди == chat_id
@@ -148,7 +152,7 @@ class TableManager:
             self.coursor.execute("INSERT INTO funcs (chat_id) VALUES (?)", (chat_id,))
         self.coursor.execute(f"UPDATE funcs SET {func} = 1 WHERE chat_id = {chat_id}")
         self.connect.commit()
-        print(f"{func} - 0n   chat: {chat_id}")
+        logging.info(f"{func} - 0n   chat: {chat_id}")
 
     def turn_off(self, chat_id, func):
         """ Задает значение == 0 в поле func, где чат_ай-ди == chat_id
@@ -156,9 +160,9 @@ class TableManager:
         try:
             self.coursor.execute(f"UPDATE funcs SET {func} = 0 WHERE chat_id = {chat_id}")
         except sqlite3.Error as error:
-            print('Error:', error)
+            logging.info('Error:', error)
         self.connect.commit()
-        print(f'{func} - Off   chat: {chat_id}')
+        logging.info(f'{func} - Off   chat: {chat_id}')
 
     def is_active_func(self, cat_id, func):
         """ Возвращает 1, если функция func в чате cat_id включена,
@@ -170,12 +174,14 @@ class TableManager:
             return False
 
     def get_all_funcs_info_in_chat(self, chat_id):
+        logging.info(' in sql get_all_funcs_info_in_chat: ')
         """Возвращает словарь в котором (ключ = название функции, значение = 1 или 0)
         Если значение == 1 --> значит функция в чате(chat_id) включена
         Если значение == 0 --> значит функция в чате(chat_id) ВЫключена"""
         info_about_chat_funcs = {}
         functions_names = []
         description = self.coursor.execute(f"SELECT * FROM funcs WHERE chat_id = {chat_id}").description
+        logging.info('columns: ', description)
         if self.coursor.execute(f"SELECT chat_id FROM funcs"
                                 f" WHERE chat_id = {chat_id}").fetchone() == None:
             self.coursor.execute("INSERT INTO funcs (chat_id) VALUES (?)", (chat_id,))
