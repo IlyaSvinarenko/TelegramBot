@@ -44,5 +44,6 @@ jobs:
         run: |
           echo "$SSH_PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
+          echo "$SERVER_IP $(ssh-keyscan -t rsa $SERVER_IP)" >> ~/.ssh/known_hosts
           ssh -i private_key.pem $SERVER_LOGIN@$SERVER_IP "docker login ghcr.io -u ilyasvinarenko -p ${{ secrets.DEPLOY_TOKEN }} && docker run -it ghcr.io/ilyasvinarenko/telegrambot:latest"
           rm -f private_key.pem
