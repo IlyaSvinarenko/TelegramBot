@@ -29,7 +29,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/ilyasvinarenko/telegrambot:latest
+          tags: ghcr.io/ilyasvinarenko/telegrambot:${{ github.sha }}
 
       - name: Deploy to server
         env:
@@ -41,7 +41,5 @@ jobs:
           chmod 600 private_key.pem
           mkdir -p ~/.ssh
           ssh-keyscan $SERVER_IP >> ~/.ssh/known_hosts
-          ssh -i private_key.pem $SERVER_LOGIN@$SERVER_IP '"sudo docker stop ilyatgbot" || echo "This container dosnt exist"'
-          ssh -i private_key.pem $SERVER_LOGIN@$SERVER_IP '"sudo docker rm ilyatgbot" || echo "This container dosnt exist"'
-          ssh -i private_key.pem $SERVER_LOGIN@$SERVER_IP "sudo docker login ghcr.io -u ilyasvinarenko -p ${{ secrets.DEPLOY_TOKEN }} && sudo docker run -d --network=ilyatgbotnet --name ilyatgbot -e OWM_api_key=${{ secrets.OWM_API_KEY }} -e openai_api_key=${{ secrets.OPENAI_API_KEY }} -e Son_of_Ilya_bot_id=${{ secrets.SON_OF_ILYA_BOT_ID }} -e Son_of_Ilya_bot=${{ secrets.SON_OF_ILYA_BOT }} ghcr.io/ilyasvinarenko/telegrambot:latest"
+          ssh -i private_key.pem $SERVER_LOGIN@$SERVER_IP "sudo docker stop ilyatgbot || echo && sudo docker rm ilyatgbot || echo && sudo docker login ghcr.io -u ilyasvinarenko -p ${{ secrets.DEPLOY_TOKEN }} && sudo docker run -d --network=ilyatgbotnet --name ilyatgbot -e OWM_api_key=${{ secrets.OWM_API_KEY }} -e openai_api_key=${{ secrets.OPENAI_API_KEY }} -e Son_of_Ilya_bot_id=${{ secrets.SON_OF_ILYA_BOT_ID }} -e Son_of_Ilya_bot=${{ secrets.SON_OF_ILYA_BOT }} ghcr.io/ilyasvinarenko/telegrambot:${{ github.sha }}"
           rm -f private_key.pem
