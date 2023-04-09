@@ -45,7 +45,7 @@ async def create_delete_menu(message: Message):
                                                                                                   'backtocontextmenu')
     inline_menu.add(back_to_context_menu)
 
-    await message.answer('Выберите контекст для удаления: ', reply_markup=inline_menu)
+    await main.bot.send_message(message.chat.id, 'Выберите контекст для удаления: ', reply_markup=inline_menu)
 
 
 async def callback_from_contexts_menu(call: CallbackQuery):
@@ -74,7 +74,6 @@ async def callback_from_contexts_menu(call: CallbackQuery):
         await main.bot.delete_message(call.message.chat.id, call.message.message_id)
         time.sleep(1)
         await create_delete_menu(call.message)
-        return 0
     else:
         await call.message.answer(f'Выбран контекст: {call_text}')
         GPT.current_contexts[str(call.message.chat.id)] = call_text
