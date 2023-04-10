@@ -43,8 +43,8 @@ async def create_delete_menu(message: Message):
                                                                                      callback_data=f'contexts '
                                                                                                           f'delete {i}')] for i in buttons_names])
     logging.info(f'{inline_menu_delete.__dict__}')
-    back_to_context_menu = [InlineKeyboardButton(text='Вернуться к выбору контекста', callback_data='contexts '
-                                                                                                    'backtocontextmenu')]
+    back_to_context_menu = InlineKeyboardButton(text='Вернуться к выбору контекста', callback_data='contexts '
+                                                                                                    'backtocontextmenu')
     inline_menu_delete.add(back_to_context_menu, )
     logging.info(f'{inline_menu_delete.__dict__}')
     await main.bot.send_message(message.chat.id, 'Выберите контекст для удаления: ', reply_markup=inline_menu_delete)
