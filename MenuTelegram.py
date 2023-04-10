@@ -70,7 +70,26 @@ async def callback_from_contexts_menu(call: CallbackQuery):
         await main.bot.delete_message(chat_id, call.message.message_id)
         time.sleep(1)
         logging.info('create_delete_menu')
-        await create_delete_menu(chat_id)
+        obj = mongodb.MongoForBotManager()
+        contexts = await obj.get_contexts_data(chat_id)
+        if GPT.current_contexts.get(str(chat_id)):
+            del GPT.current_contexts[str(chat_id)]
+        buttons_names = [i[0] for i in contexts]
+        logging.info('columns: %s', buttons_names)
+        inline_menu_delete = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=f'{i}',
+                                                                                         callback_data=f'contexts '
+                                                                                                       f'delete {i}')]
+                                                                   for i in buttons_names])
+        logging.info(f'{inline_menu_delete.__dict__}')
+        back_to_context_menu = InlineKeyboardButton(text='Вернуться к выбору контекста',
+                                                    callback_data='contexts backtocontextmenu')
+        try:
+            inline_menu_delete.add(back_to_context_menu)
+            logging.info(f'{inline_menu_delete.__dict__}')
+            await call.answer('Выберите контекст для удаления: ', reply_markup=inline_menu_delete)
+        except Exception as error:
+            logging.info("ERROR:  ", error)
+            await call.answer('Выберите контекст для удаления: ', reply_markup=inline_menu_delete)
     elif call_text == 'backtocontextmenu':
         await main.bot.delete_message(call.message.chat.id, call.message.message_id)
         time.sleep(1)
