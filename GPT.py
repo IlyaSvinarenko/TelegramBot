@@ -8,6 +8,8 @@ current_contexts = {}
 async def get_response(message_text, chat_id, in_creating_process=0):
     obj = mongodb.MongoForBotManager()
     global current_contexts
+    for key, val in current_contexts.items():
+        print(str(key), '  :  ', str(val))
     if in_creating_process:
         messages = [{'role': 'user', 'content': message_text}]
         new_context = await obj.create_context_in_collection(str(chat_id), messages)
@@ -31,9 +33,9 @@ async def get_response(message_text, chat_id, in_creating_process=0):
 async def get_answer(messages):
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=messages,
-            temperature=0.4,
+            temperature=0.5,
         )
         answer = response['choices'][0]['message']['content']
         return answer

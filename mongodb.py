@@ -8,7 +8,7 @@ logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message
 
 class MongoForBotManager:
     def __init__(self):
-        self.uri = "mongodb://mongodb-container:27017"
+        self.uri = "mongodb://localhost:27017"
         self.db = "chats_id"
 
     async def create_collection_chat_id(self, chat_id):
@@ -62,7 +62,7 @@ class MongoForBotManager:
         return
 
     async def get_all_collections(self):
-        logging.info('in mongodb: get_all_collections')
+        logging.debug('in mongodb: get_all_collections')
         client = AsyncIOMotorClient(self.uri)
         chats_id_db = client.get_database(self.db)
         col_name_list = await chats_id_db.list_collection_names()
@@ -70,7 +70,7 @@ class MongoForBotManager:
         return col_name_list
 
     async def get_contexts_data(self, chat_id):
-        logging.info('in mongodb: get_contexts_data')
+        logging.debug('in mongodb: get_contexts_data')
         client = AsyncIOMotorClient(self.uri)
         collection = client[f"{self.db}"][f"{chat_id}"]
         contexts_names = []
@@ -86,7 +86,7 @@ class MongoForBotManager:
         return list(zip(contexts_names, contexts_text))
 
     async def get_context(self, chat_id, context_name):
-        logging.info('in mongodb: get_context')
+        logging.debug('in mongodb: get_context')
         client = AsyncIOMotorClient(self.uri)
         collection = client[f"{self.db}"][f"{chat_id}"]
         document = await collection.find_one({context_name: {'$exists': True}})

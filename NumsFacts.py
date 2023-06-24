@@ -14,3 +14,4 @@ def Facts_about_num(num):
         else:
             continue
     return answer
+

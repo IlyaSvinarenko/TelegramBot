@@ -5,7 +5,6 @@ from aiogram.types import Message, InlineKeyboardMarkup, \
 log_level = os.getenv("LOG_LEVEL", "INFO")
 logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message)s')
 
-
 '''//////////////// Дальше блок контекстовых меню /////////////'''
 
 
@@ -26,8 +25,9 @@ async def contexts_menu(message: Message):
             [InlineKeyboardButton(text=f'{i}', callback_data=f'contexts {i}')] for i in buttons_names])
         delete_context_btn = InlineKeyboardButton(text='Удаление контекстов', callback_data='contexts delete')
         create_context_btn = InlineKeyboardButton(text='Создать новый контекст', callback_data='contexts createnew') \
-            if len(await obj.get_contexts_data(message.chat.id)) <= 4 else InlineKeyboardButton(text='Достигнут лимит контекстов',
-                                                                                               callback_data='contexts createnew')
+            if len(await obj.get_contexts_data(message.chat.id)) <= 4 else InlineKeyboardButton(
+            text='Достигнут лимит контекстов',
+            callback_data='contexts createnew')
         inline_menu.add(delete_context_btn, create_context_btn)
     await message.answer('Контексты в этом чате: ', reply_markup=inline_menu)
 
@@ -41,16 +41,18 @@ async def create_delete_menu(chat_id):
     logging.info('columns: %s', buttons_names)
     inline_menu_delete = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=f'{i}',
                                                                                      callback_data=f'contexts '
-                                                                                                          f'delete {i}')] for i in buttons_names])
+                                                                                                   f'delete {i}')] for i
+                                                               in buttons_names])
     logging.info(f'{inline_menu_delete.__dict__}')
-    back_to_context_menu = InlineKeyboardButton(text='Вернуться к выбору контекста', callback_data='contexts backtocontextmenu')
+    back_to_context_menu = InlineKeyboardButton(text='Вернуться к выбору контекста',
+                                                callback_data='contexts backtocontextmenu')
     try:
         inline_menu_delete.add(back_to_context_menu)
         logging.info(f'{inline_menu_delete.__dict__}')
         await main.bot.send_message(chat_id, 'Выберите контекст для удаления: ', reply_markup=inline_menu_delete)
     except Exception as error:
-        logging.info("ERROR:  ", error)
-        await main.bot.send_message(chat_id, 'Выберите контекст для удаления: ', reply_markup=inline_menu_delete)
+        logging.info(error)
+
 
 async def callback_from_contexts_menu(call: CallbackQuery):
     obj = mongodb.MongoForBotManager()
@@ -68,28 +70,25 @@ async def callback_from_contexts_menu(call: CallbackQuery):
     elif call_text == 'delete':
         chat_id = call.message.chat.id
         await main.bot.delete_message(chat_id, call.message.message_id)
-        time.sleep(1)
         logging.info('create_delete_menu')
         obj = mongodb.MongoForBotManager()
         contexts = await obj.get_contexts_data(chat_id)
         if GPT.current_contexts.get(str(chat_id)):
             del GPT.current_contexts[str(chat_id)]
         buttons_names = [i[0] for i in contexts]
-        logging.info('columns: %s', buttons_names)
         inline_menu_delete = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=f'{i}',
                                                                                          callback_data=f'contexts '
                                                                                                        f'delete {i}')]
                                                                    for i in buttons_names])
-        logging.info(f'{inline_menu_delete.__dict__}')
         back_to_context_menu = InlineKeyboardButton(text='Вернуться к выбору контекста',
                                                     callback_data='contexts backtocontextmenu')
         try:
-            inline_menu_delete.add(back_to_context_menu)
             logging.info(f'{inline_menu_delete.__dict__}')
-            await call.answer('Выберите контекст для удаления: ', reply_markup=inline_menu_delete)
+            inline_menu_delete.add(back_to_context_menu)
+            await main.bot.send_message(call.message.chat.id, 'Выберите контекст для удаления: ',
+                                        reply_markup=inline_menu_delete)
         except Exception as error:
-            logging.info("ERROR:  ", error)
-            await call.answer('Выберите контекст для удаления: ', reply_markup=inline_menu_delete)
+            logging.info(error)
     elif call_text == 'backtocontextmenu':
         await main.bot.delete_message(call.message.chat.id, call.message.message_id)
         time.sleep(1)
@@ -103,6 +102,7 @@ async def callback_from_contexts_menu(call: CallbackQuery):
         await call.message.answer(f'Выбран контекст: {call_text}')
         GPT.current_contexts[str(call.message.chat.id)] = call_text
     return 0
+
 
 '''//////////////// Дальше блок меню функций /////////////'''
 

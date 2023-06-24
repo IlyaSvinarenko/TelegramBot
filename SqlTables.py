@@ -192,14 +192,17 @@ class TableManager:
         for name in functions_names:
             info_about_chat_funcs[name] = \
                 self.coursor.execute(f"SELECT {name} FROM funcs WHERE chat_id = {chat_id}").fetchone()[0]
-            logging.info('columns: %s', info_about_chat_funcs)
+        logging.info('columns: %s', info_about_chat_funcs)
         return info_about_chat_funcs
 
     def add_func_column(self, func_name):
-        """ Это для упрощенного добавления колонок в таблицу funcs"""
-        self.coursor.execute(f"ALTER TABLE funcs "
-                             f"ADD {func_name} INTEGER NOT NULL DEFAULT 0")
-        self.connect.commit()
+        try:
+            """ Это для упрощенного добавления колонок в таблицу funcs"""
+            self.coursor.execute(f"ALTER TABLE funcs "
+                                 f"ADD {func_name} INTEGER NOT NULL DEFAULT 0")
+            self.connect.commit()
+        except Exception as error:
+            logging.info(str(error))
 
 
 object = TableManager()
