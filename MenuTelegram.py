@@ -68,13 +68,11 @@ async def callback_from_contexts_menu(call: CallbackQuery):
             await call.message.answer("Достигнут лимит в 5 контекстов, сначала удалите один из контекстов")
             return 0
     elif call_text == 'delete':
-        chat_id = call.message.chat.id
-        await main.bot.delete_message(chat_id, call.message.message_id)
+        await main.bot.delete_message(call.message.chat.id, call.message.message_id)
         logging.info('create_delete_menu')
-        obj = mongodb.MongoForBotManager()
-        contexts = await obj.get_contexts_data(chat_id)
-        if GPT.current_contexts.get(str(chat_id)):
-            del GPT.current_contexts[str(chat_id)]
+        contexts = await obj.get_contexts_data(call.message.chat.id)
+        if GPT.current_contexts.get(str(call.message.chat.id)):
+            del GPT.current_contexts[str(call.message.chat.id)]
         buttons_names = [i[0] for i in contexts]
         inline_menu_delete = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=f'{i}',
                                                                                          callback_data=f'contexts '
@@ -83,12 +81,13 @@ async def callback_from_contexts_menu(call: CallbackQuery):
         back_to_context_menu = InlineKeyboardButton(text='Вернуться к выбору контекста',
                                                     callback_data='contexts backtocontextmenu')
         try:
-            logging.info(f'{inline_menu_delete.__dict__}')
+            logging.info(f'в блоке трай экцепт создания меню для удаления контекстов {inline_menu_delete.__dict__}')
             inline_menu_delete.add(back_to_context_menu)
             await main.bot.send_message(call.message.chat.id, 'Выберите контекст для удаления: ',
                                         reply_markup=inline_menu_delete)
+
         except Exception as error:
-            logging.info(error)
+            logging.info(f'эррор {error}')
     elif call_text == 'backtocontextmenu':
         await main.bot.delete_message(call.message.chat.id, call.message.message_id)
         time.sleep(1)
@@ -97,7 +96,7 @@ async def callback_from_contexts_menu(call: CallbackQuery):
         await obj.delete_context(call.message.chat.id, ' '.join(call_text.split()[1::]))
         await main.bot.delete_message(call.message.chat.id, call.message.message_id)
         time.sleep(1)
-        await create_delete_menu(call.message)
+        await create_delete_menu(call.message.chat.id)
     else:
         await call.message.answer(f'Выбран контекст: {call_text}')
         GPT.current_contexts[str(call.message.chat.id)] = call_text
