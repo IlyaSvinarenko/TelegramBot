@@ -78,12 +78,11 @@ async def callback_from_contexts_menu(call: CallbackQuery):
                                                                                          callback_data=f'contexts '
                                                                                                        f'delete {i}')]
                                                                    for i in buttons_names])
-        back_to_context_menu = InlineKeyboardButton(text='Вернуться к выбору контекста',
-                                                    callback_data='contexts backtocontextmenu')
+        back_to_context_menu = InlineKeyboardButton(text='Вернуться к выбору контекста', callback_data='contexts backtocontextmenu')
         try:
             logging.info(f'в блоке трай экцепт создания меню для удаления контекстов {inline_menu_delete.__dict__}')
             inline_menu_delete.add(back_to_context_menu)
-            await main.bot.send_message(call.message.chat.id, 'Выберите контекст для удаления: ',
+            await call.message.answer('Выберите контекст для удаления: ',
                                         reply_markup=inline_menu_delete)
 
         except Exception as error:
