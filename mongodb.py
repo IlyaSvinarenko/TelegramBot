@@ -8,7 +8,7 @@ logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message
 
 class MongoForBotManager:
     def __init__(self):
-        self.uri = "mongodb://localhost:27017"
+        self.uri = "mongodb://mongodb-container:27017"
         self.db = "chats_id"
 
     async def create_collection_chat_id(self, chat_id):
