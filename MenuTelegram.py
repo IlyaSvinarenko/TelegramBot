@@ -78,7 +78,9 @@ async def callback_from_contexts_menu(call: CallbackQuery):
                                                                                          callback_data=f'contexts '
                                                                                                        f'delete {i}')]
                                                                    for i in buttons_names])
+        logging.info(f'inline_menu_delete = InlineKeyboardMarkup   {inline_menu_delete}')
         back_to_context_menu = InlineKeyboardButton(text='Вернуться к выбору контекста', callback_data='contexts backtocontextmenu')
+        logging.info(f'back_to_context_menu = InlineKeyboardButton  {back_to_context_menu}')
         try:
             logging.info(f'в блоке трай экцепт создания меню для удаления контекстов {inline_menu_delete.__dict__}')
             inline_menu_delete.add(back_to_context_menu)
