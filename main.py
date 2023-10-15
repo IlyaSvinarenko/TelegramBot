@@ -84,13 +84,18 @@ async def on_user_join(message: types.Message):
 
 @dp.message_handler()
 async def definition_func(message: Message):
+    logging.info('в definition_func')
     """ Перехватывает все сообщения и в зависимости от того какая функция чата сейчас включена,
     передает сообщение в функии дальше"""
     sql_table_funcs = SqlTables.TableManager()
     if message.chat.type != 'private' and sql_table_funcs.is_active_func(message.chat.id, 'table_users'):
+        logging.info("сработал if в definition_func \n message.chat.type != private and "
+                     "sql_table_funcs.is_active_func(message.chat.id, "
+                     "table_users) ")
         await action_with_table_users(user_id=message.from_user.id, chat_id=message.chat.id, username=
         message.from_user.username, first_name=message.from_user.first_name)
     if message.content_type == 'text':
+        logging.info("сработал if в definition_func \n message.content_type == 'text' ")
         if message.text.isdigit() and sql_table_funcs.is_active_func(message.chat.id, 'nums_fact'):
             await nums_facts(message)
         if sql_table_funcs.is_active_func(message.chat.id, 'weather'):
