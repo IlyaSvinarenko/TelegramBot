@@ -33,7 +33,7 @@ async def get_response(message_text, chat_id, in_creating_process=0):
 async def get_answer(messages):
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=messages,
             temperature=0.5,
         )
