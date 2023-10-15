@@ -106,6 +106,7 @@ async def definition_func(message: Message):
 
 
 async def openai_chatting(message):
+    logging.info(f'в def openai_chatting \n in_creating_context = {in_creating_context}')
     await bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.TYPING)
     if in_creating_context.get(str(message.chat.id)) == 1:
         await bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.TYPING)
