@@ -38,25 +38,26 @@ async def create_delete_menu(chat_id):
     if GPT.current_contexts.get(str(chat_id)):
         del GPT.current_contexts[str(chat_id)]
     buttons_names = [i[0] for i in contexts]
-    logging.info('columns: %s', buttons_names)
+    logging.info('В def create_delete_menu \n columns: %s', buttons_names)
     inline_menu_delete = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=f'{i}',
                                                                                      callback_data=f'contexts '
                                                                                                    f'delete {i}')] for i
                                                                in buttons_names])
-    logging.info(f'{inline_menu_delete.__dict__}')
+    logging.info(f'В def create_delete_menu \n {inline_menu_delete.__dict__}')
     back_to_context_menu = InlineKeyboardButton(text='Вернуться к выбору контекста',
                                                 callback_data='contexts backtocontextmenu')
     try:
         inline_menu_delete.add(back_to_context_menu)
-        logging.info(f'{inline_menu_delete.__dict__}')
+        logging.info(f'В def create_delete_menu \n {inline_menu_delete.__dict__}')
         await main.bot.send_message(chat_id, 'Выберите контекст для удаления: ', reply_markup=inline_menu_delete)
     except Exception as error:
-        logging.info(error)
+        logging.info(f'В def create_delete_menu \n {error}')
 
 
 async def callback_from_contexts_menu(call: CallbackQuery):
     obj = mongodb.MongoForBotManager()
     call_text = call.data[9::]  # Отрезаем лишнюю часть текста "menu2 "
+    logging.info(f"В def callback_from_contexts_menu \n {obj.get_contexts_data(call.message.chat.id)}")
     if call_text == 'createnew':
         if len(await obj.get_contexts_data(call.message.chat.id)) < 5:
 
@@ -69,7 +70,7 @@ async def callback_from_contexts_menu(call: CallbackQuery):
             return 0
     elif call_text == 'delete':
         await main.bot.delete_message(call.message.chat.id, call.message.message_id)
-        logging.info('create_delete_menu')
+        logging.info('В def callback_from_contexts_menu \n в elif call_text == "delete":')
         contexts = await obj.get_contexts_data(call.message.chat.id)
         if GPT.current_contexts.get(str(call.message.chat.id)):
             del GPT.current_contexts[str(call.message.chat.id)]
