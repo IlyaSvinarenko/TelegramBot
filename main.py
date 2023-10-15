@@ -46,6 +46,7 @@ async def call_back_funcs_menu(call: CallbackQuery):
 
 @dp.message_handler(commands=['help', 'start'])
 async def help(message: Message):
+    logging.info('в def help')
     await message.answer('Commands:\n 1) /help \n 2) /menu \n 3) /contexts \n'
                          'Команда /menu открывает меню функций в чате.\n'
                          'слева в меню - название функции бота\n'
