@@ -9,7 +9,6 @@ bot_token = os.environ.get('Son_of_Ilya_bot')
 bot = Bot(token=bot_token)
 dp = Dispatcher(bot)
 
-
 log_level = os.getenv("LOG_LEVEL", "INFO")
 logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message)s')
 
@@ -18,6 +17,13 @@ dataclass_chat_funcs: dict[dict] = dict()
 in_creating_context = {}
 
 '''/////////////// Перехватчики команд для вызовов меню и колбеков от меню //////////////////'''
+
+
+@dp.message_handler(lambda message: message.text.startswith('img'))
+async def make_image(message: Message):
+    prompt = await GPT.prompt_editor_for_img_generator(' '.join(message.text.split()[1::]))
+    image_byte_arr = await GPT.get_image_byte_arr(prompt)
+    await bot.send_photo(message.chat.id, photo=image_byte_arr)
 
 
 @dp.message_handler(commands=['contexts'])
@@ -59,13 +65,13 @@ async def help(message: Message):
                          'Функция weather: В ответ на отправленное в чат название населенного пункта, бот пришлет '
                          'погоду в данном населенном пункте\n\n'
                          'Функция openai включает возможности ИИ от одноименной компании для '
-                         'общения в чате (модель: gpt-3.5-turbo)')
+                         'общения в чате (модель: gpt-4)')
 
 
 '''/////////////// Перехватчик обновлений добавления и удаления юзеров из чата //////////////////'''
 
 
-@dp.message_handler(content_types=['new_chat_members', 'left_chat_member'])
+@dp.message_handler(content_types=['new_chat_members'])
 async def on_user_join(message: types.Message):
     sql_table_funcs = SqlTables.TableManager()
     for user in message.new_chat_members:
@@ -74,10 +80,16 @@ async def on_user_join(message: types.Message):
         if sql_table_funcs.is_active_func(message.chat.id, 'table_users'):
             await action_with_table_users(user_id=user['id'], chat_id=message.chat.id, username=user['username'],
                                           first_name=user['first_name'])
+
+
+@dp.message_handler(content_types=['left_chat_member'])
+async def on_left_chat_member(message: types.Message):
+    manager = SqlTables.TableManager()
+    manager.del_user(message.left_chat_member.id)
     if message.left_chat_member:
-        await bot.send_message(message.chat.id, f"Интернет тебе пухом.\n Пусть другие чаты будут к тебе добрее чем мы,"
+        await bot.send_message(message.chat.id, f"Интернет тебе пухом.\n"
+                                                f" Пусть другие чаты будут к тебе добрее чем мы,"
                                                 f" {message.left_chat_member.first_name}!")
-        sql_table_funcs.del_user(message.left_chat_member.id)
 
 
 '''/////////////// Перехватчик сообщений и функции обработки сообщений //////////////////'''

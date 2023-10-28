@@ -205,7 +205,7 @@ class TableManager:
             logging.info(str(error))
 
 
-object = TableManager()
-object.create_table_funcs()
-object.create_table_users()
-object.add_func_column('openai')
+# object = TableManager()
+# object.create_table_funcs()
+# object.create_table_users()
+# object.add_func_column('openai')
