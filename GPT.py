@@ -1,7 +1,5 @@
 import openai, os, mongodb, requests, logging
-import g4f
 import io
-from io import BytesIO
 from aiogram import types
 
 openai.api_key = os.environ.get("openai_api_key")
