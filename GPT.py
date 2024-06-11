@@ -1,5 +1,3 @@
-import nest_asyncio
-nest_asyncio.apply()
 import openai, os, mongodb, requests, logging
 import g4f
 import io
