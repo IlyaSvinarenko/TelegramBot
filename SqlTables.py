@@ -208,4 +208,3 @@ class TableManager:
 object = TableManager()
 object.create_table_funcs()
 object.create_table_users()
-object.add_func_column('openai')

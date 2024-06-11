@@ -1,5 +1,7 @@
+import nest_asyncio
+nest_asyncio.apply()
 import openai, os, mongodb, requests, logging
-
+import g4f
 import io
 from io import BytesIO
 from aiogram import types
@@ -39,18 +41,20 @@ async def get_response(message_text, chat_id, in_creating_process=0):
     return answer
 
 
-
 async def get_answer(messages):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            temperature=0.5,
-        )
-        answer = response['choices'][0]['message']['content']
-        return answer
-    except openai.error.OpenAIError as error:
-        logging.info(f'В def create_delete_menu \n {error.error}')
+    # try:
+    #     response = openai.ChatCompletion.create(
+    #         model="gpt-4-1106-preview",#"gpt-3.5-turbo",
+    #         messages=messages,
+    #         temperature=0.5,
+    #     )
+    #     answer = response['choices'][0]['message']['content']
+    #     return answer
+    # except openai.error.OpenAIError as error:
+    #     logging.info(f'in GPT / def create_delete_menu: \n '
+    #                  f'ERROR == {error.error}')
+    answer = "Это тестовый ответ на все сообщения от пользователя"
+    return answer
 
 
 async def get_image_byte_arr(message):
@@ -61,9 +65,6 @@ async def get_image_byte_arr(message):
             size="1024x1024"
         )
         url = response['data'][0]['url']
-
-        print(url)
-
         response = requests.get(url)
         response.raise_for_status()  # Raise an exception if the GET request was unsuccessful
 
@@ -71,7 +72,8 @@ async def get_image_byte_arr(message):
         return types.InputFile(image_byte_arr, filename='image.png')
 
     except openai.error.OpenAIError as error:
-        logging.info(f'В def create_delete_menu \n {error.error}')
+        logging.info(f'in GPT / def get_image_byte_arr: \n'
+                     f'ERROR == {error.error}')
 
 
 async def prompt_editor_for_img_generator(base_prompt):
@@ -83,7 +85,5 @@ async def prompt_editor_for_img_generator(base_prompt):
         ]
     )
     new_prompt = response['choices'][0]['message']['content']
-    print(response)
-    print(new_prompt)
     return new_prompt
 

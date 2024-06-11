@@ -12,8 +12,6 @@ dp = Dispatcher(bot)
 log_level = os.getenv("LOG_LEVEL", "INFO")
 logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message)s')
 
-dataclass_chat_funcs: dict[dict] = dict()
-
 in_creating_context = {}
 
 '''/////////////// Перехватчики команд для вызовов меню и колбеков от меню //////////////////'''
@@ -21,6 +19,7 @@ in_creating_context = {}
 
 @dp.message_handler(lambda message: message.text.startswith('img'))
 async def make_image(message: Message):
+    logging.info('in main / def make_image')
     prompt = await GPT.prompt_editor_for_img_generator(' '.join(message.text.split()[1::]))
     image_byte_arr = await GPT.get_image_byte_arr(prompt)
     await bot.send_photo(message.chat.id, photo=image_byte_arr)
@@ -28,6 +27,7 @@ async def make_image(message: Message):
 
 @dp.message_handler(commands=['contexts'])
 async def get_contexts_menu(message: Message):
+    logging.info('in main / def get_contexts_menu')
     if in_creating_context.get(str(message.chat.id)):
         in_creating_context[(str(message.chat.id))] = 0
     if GPT.current_contexts.get(str(message.chat.id)):
@@ -37,22 +37,27 @@ async def get_contexts_menu(message: Message):
 
 @dp.callback_query_handler(lambda query: query.data.startswith('contexts'))
 async def callback_from_contexts_menus(call: CallbackQuery):
+    logging.info(f'in main / def callback_from_contexts_menus: \n'
+                 f'callback == {call}')
     in_creating_context[str(call.message.chat.id)] = await MenuTelegram.callback_from_contexts_menu(call)
 
 
 @dp.message_handler(commands=['menu'])
 async def get_funcs_menu(message: Message):
-    await MenuTelegram.funcs_menu(message)
+    logging.info('in main / def get_funcs_menu')
+    await MenuTelegram.create_funcs_menu(message)
 
 
 @dp.callback_query_handler(lambda query: query.data.startswith('funcs'))
-async def call_back_funcs_menu(call: CallbackQuery):
+async def callback_from_funcs_menu(call: CallbackQuery):
+    logging.info(f'in main / def callback_from_funcs_menu: \n'
+                 f'callback == {call}')
     await MenuTelegram.callback_from_funcs_menu(call)
 
 
 @dp.message_handler(commands=['help', 'start'])
 async def help(message: Message):
-    logging.info('в def help')
+    logging.info('in main / def help')
     await message.answer('Commands:\n 1) /help \n 2) /menu \n 3) /contexts \n'
                          'Команда /menu открывает меню функций в чате.\n'
                          'слева в меню - название функции бота\n'
@@ -73,6 +78,7 @@ async def help(message: Message):
 
 @dp.message_handler(content_types=['new_chat_members'])
 async def on_user_join(message: types.Message):
+    logging.info('in main / def on_user_join')
     sql_table_funcs = SqlTables.TableManager()
     for user in message.new_chat_members:
         await bot.send_message(message.chat.id, f"Добро пожаловать на борт '{message.chat.title}', @{user.username}!"
@@ -84,6 +90,7 @@ async def on_user_join(message: types.Message):
 
 @dp.message_handler(content_types=['left_chat_member'])
 async def on_left_chat_member(message: types.Message):
+    logging.info('in main / def on_left_chat_member')
     manager = SqlTables.TableManager()
     manager.del_user(message.left_chat_member.id)
     if message.left_chat_member:
@@ -97,18 +104,17 @@ async def on_left_chat_member(message: types.Message):
 
 @dp.message_handler()
 async def definition_func(message: Message):
-    logging.info('в definition_func')
+    logging.info(f'in main / definition_func: \n'
+                 f'message.chat.type == {message.chat.type}\n'
+                 f'message.content_type == {message.content_type}\n'
+                 f'message.text == {message.text}')
     """ Перехватывает все сообщения и в зависимости от того какая функция чата сейчас включена,
     передает сообщение в функии дальше"""
     sql_table_funcs = SqlTables.TableManager()
     if message.chat.type != 'private' and sql_table_funcs.is_active_func(message.chat.id, 'table_users'):
-        logging.info("сработал if в definition_func \n message.chat.type != private and "
-                     "sql_table_funcs.is_active_func(message.chat.id, "
-                     "table_users) ")
         await action_with_table_users(user_id=message.from_user.id, chat_id=message.chat.id, username=
         message.from_user.username, first_name=message.from_user.first_name)
     if message.content_type == 'text':
-        logging.info("сработал if в definition_func \n message.content_type == 'text' ")
         if message.text.isdigit() and sql_table_funcs.is_active_func(message.chat.id, 'nums_fact'):
             await nums_facts(message)
         if sql_table_funcs.is_active_func(message.chat.id, 'weather'):
@@ -118,15 +124,14 @@ async def definition_func(message: Message):
 
 
 async def openai_chatting(message):
-    logging.info(f'в def openai_chatting \n in_creating_context = {in_creating_context}')
     await bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.TYPING)
+    logging.info(f'in main / def openai_chatting \n'
+                 f'in_creating_context == {in_creating_context}')
     if in_creating_context.get(str(message.chat.id)) == 1:
-        await bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.TYPING)
         gpt_answer = await GPT.get_response(message.text, message.chat.id, in_creating_process=1)
         in_creating_context[str(message.chat.id)] = 0
         await message.answer(gpt_answer)
     else:
-        await bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.TYPING)
         gpt_answer = await GPT.get_response(message.text, message.chat.id)
         await message.answer(gpt_answer)
 
