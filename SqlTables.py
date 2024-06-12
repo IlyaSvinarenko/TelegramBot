@@ -132,14 +132,15 @@ class TableManager:
 
     def create_table_funcs(self):
         '''шаблон для создания таблицы funcs с полями:
-        (chat_id, table_users, weather, nums_fact, openai)'''
+        (chat_id, table_users, weather, nums_fact, openai, game_price)'''
         try:
             self.coursor.execute("""CREATE TABLE IF NOT EXISTS funcs (
             chat_id INT UNIQUE,
             table_users INT NOT NULL DEFAULT 0,
             weather INT NOT NULL DEFAULT 0,
             nums_fact INT NOT NULL DEFAULT 0,
-            openai INT NOT NULL DEFAULT 0);""")
+            openai INT NOT NULL DEFAULT 0,
+            game_price INT NOT NULL DEFAULT 0);""")
             self.connect.commit()
         except sqlite3.Error as error:
             logging.info('Error:', error)
@@ -208,3 +209,4 @@ class TableManager:
 object = TableManager()
 object.create_table_funcs()
 object.create_table_users()
+object.add_func_column("game_price")

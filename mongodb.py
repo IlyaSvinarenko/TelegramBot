@@ -51,7 +51,10 @@ class MongoForBotManager:
         return
 
     async def update_context(self, chat_id, context_name, dialog_dict):
-        logging.info('in mongodb / def update_context')
+        logging.info(f'in mongodb / def update_context:'
+                     f'chat_id == {chat_id}'
+                     f'context_name == {context_name}'
+                     f'dialog_dict == {dialog_dict}')
         client = AsyncIOMotorClient(self.uri)
         collection = client[f"{self.db}"][f"{chat_id}"]
         documents = await collection.find_one({context_name: {'$exists': True}})

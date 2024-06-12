@@ -1,8 +1,9 @@
-import SqlTables, NumsFacts, Weather, os, GPT, MenuTelegram, logging
+import SqlTables, NumsFacts, Weather, os, GPT, MenuTelegram, logging, Parser_game_price
 from translate import Translator
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import Message, CallbackQuery, ChatActions
 from aiogram.utils import executor
+
 
 translator = Translator(to_lang='ru')
 bot_token = os.environ.get('Son_of_Ilya_bot')
@@ -32,14 +33,22 @@ async def get_contexts_menu(message: Message):
         in_creating_context[(str(message.chat.id))] = 0
     if GPT.current_contexts.get(str(message.chat.id)):
         del GPT.current_contexts[(str(message.chat.id))]
-    await MenuTelegram.contexts_menu(message)
+    await MenuTelegram.create_contexts_menu(message)
 
 
 @dp.callback_query_handler(lambda query: query.data.startswith('contexts'))
-async def callback_from_contexts_menus(call: CallbackQuery):
+async def callback_from_contexts_menu(call: CallbackQuery):
     logging.info(f'in main / def callback_from_contexts_menus: \n'
                  f'callback == {call}')
     in_creating_context[str(call.message.chat.id)] = await MenuTelegram.callback_from_contexts_menu(call)
+
+
+@dp.callback_query_handler(lambda query: query.data.startswith('delete'))
+async def callback_from_delete_menu(call: CallbackQuery):
+    logging.info(f'in main / def callback_from_delete_menu: \n'
+                 f'callback == {call}')
+    in_creating_context[str(call.message.chat.id)] = 0
+    await MenuTelegram.callback_from_delete_menu(call)
 
 
 @dp.message_handler(commands=['menu'])
@@ -117,11 +126,13 @@ async def definition_func(message: Message):
     if message.content_type == 'text':
         if message.text.isdigit() and sql_table_funcs.is_active_func(message.chat.id, 'nums_fact'):
             await nums_facts(message)
-        if sql_table_funcs.is_active_func(message.chat.id, 'weather'):
+        elif sql_table_funcs.is_active_func(message.chat.id, 'weather'):
             await get_weather(message)
-        if sql_table_funcs.is_active_func(message.chat.id, 'openai'):
+        elif sql_table_funcs.is_active_func(message.chat.id, 'openai'):
             await openai_chatting(message)
-
+        elif sql_table_funcs.is_active_func(message.chat.id, 'game_price'):
+            response = await Parser_game_price.find_steam_game(message)
+            await message.answer(response)
 
 async def openai_chatting(message):
     await bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.TYPING)
