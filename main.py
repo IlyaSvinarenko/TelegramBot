@@ -3,6 +3,7 @@ from translate import Translator
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import Message, CallbackQuery, ChatActions
 from aiogram.utils import executor
+import period
 
 
 translator = Translator(to_lang='ru')
@@ -50,6 +51,9 @@ async def callback_from_delete_menu(call: CallbackQuery):
     in_creating_context[str(call.message.chat.id)] = 0
     await MenuTelegram.callback_from_delete_menu(call)
 
+@dp.callback_query_handler(lambda query: query.data.startswith('subscribe'))
+async def callback_from_subscribe_menu(call: CallbackQuery):
+    await MenuTelegram.callback_from_subscribe_menu(call)
 
 @dp.message_handler(commands=['menu'])
 async def get_funcs_menu(message: Message):
@@ -133,6 +137,7 @@ async def definition_func(message: Message):
         elif sql_table_funcs.is_active_func(message.chat.id, 'game_price'):
             response = await Parser_game_price.find_steam_game(message)
             await message.answer(response)
+            await MenuTelegram.create_subscribe_menu(message)
 
 async def openai_chatting(message):
     await bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.TYPING)

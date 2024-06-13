@@ -121,3 +121,21 @@ async def callback_from_funcs_menu(call: CallbackQuery):
     await main.bot.delete_message(call.message.chat.id, call.message.message_id)
     time.sleep(1)
     await create_funcs_menu(call.message)
+
+async def create_subscribe_menu(message: Message):
+    """создаем меню"""
+
+    inline_menu = InlineKeyboardMarkup(row_width=2,
+                                       inline_keyboard=[
+                                           [InlineKeyboardButton(text='да',
+                                                                 callback_data=f'subscribe yes')],
+                                            [InlineKeyboardButton(text='нет',
+                                                                 callback_data='subscribe no')]])
+    await message.answer(f'Хотите ли подписаться на обновления по игре {message.text}', reply_markup=inline_menu)
+
+async def callback_from_subscribe_menu(call: CallbackQuery):
+    call_data = call.data.split()
+    if call_data[1] == 'yes':
+        print('yes')
+    elif call_data[1] == 'no':
+        print('no')
