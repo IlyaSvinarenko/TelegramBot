@@ -17,7 +17,11 @@ logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message
 in_creating_context = {}
 
 '''/////////////// Перехватчики команд для вызовов меню и колбеков от меню //////////////////'''
-
+@dp.message_handler(commands=['subscribe'])
+async def get_subscribe_menu(message: Message):
+    sql_table = SqlTables.TableManager()
+    result = sql_table.get_all_subscribes_in_chat(message.chat.id)
+    await message.answer(result)
 
 @dp.message_handler(lambda message: message.text.startswith('img'))
 async def make_image(message: Message):
@@ -51,9 +55,9 @@ async def callback_from_delete_menu(call: CallbackQuery):
     in_creating_context[str(call.message.chat.id)] = 0
     await MenuTelegram.callback_from_delete_menu(call)
 
-@dp.callback_query_handler(lambda query: query.data.startswith('subscribe'))
+@dp.callback_query_handler(lambda query: query.data.startswith('subscribe_chose'))
 async def callback_from_subscribe_menu(call: CallbackQuery):
-    await MenuTelegram.callback_from_subscribe_menu(call)
+    await MenuTelegram.callback_from_subscribe_chose_menu(call)
 
 @dp.message_handler(commands=['menu'])
 async def get_funcs_menu(message: Message):
@@ -123,21 +127,26 @@ async def definition_func(message: Message):
                  f'message.text == {message.text}')
     """ Перехватывает все сообщения и в зависимости от того какая функция чата сейчас включена,
     передает сообщение в функии дальше"""
-    sql_table_funcs = SqlTables.TableManager()
-    if message.chat.type != 'private' and sql_table_funcs.is_active_func(message.chat.id, 'table_users'):
+    sql_table = SqlTables.TableManager()
+    if message.chat.type != 'private' and sql_table.is_active_func(message.chat.id, 'table_users'):
         await action_with_table_users(user_id=message.from_user.id, chat_id=message.chat.id, username=
         message.from_user.username, first_name=message.from_user.first_name)
     if message.content_type == 'text':
-        if message.text.isdigit() and sql_table_funcs.is_active_func(message.chat.id, 'nums_fact'):
+        if message.text.isdigit() and sql_table.is_active_func(message.chat.id, 'nums_fact'):
             await nums_facts(message)
-        elif sql_table_funcs.is_active_func(message.chat.id, 'weather'):
+        elif sql_table.is_active_func(message.chat.id, 'weather'):
             await get_weather(message)
-        elif sql_table_funcs.is_active_func(message.chat.id, 'openai'):
+        elif sql_table.is_active_func(message.chat.id, 'openai'):
             await openai_chatting(message)
-        elif sql_table_funcs.is_active_func(message.chat.id, 'game_price'):
-            response = await Parser_game_price.find_steam_game(message)
-            await message.answer(response)
-            await MenuTelegram.create_subscribe_menu(message)
+        elif sql_table.is_active_func(message.chat.id, 'game_price'):
+            result = sql_table.get_game_info(message.text)
+            if result:
+                await MenuTelegram.create_subscribe_chose_menu(message, result)
+            else:
+                response = await Parser_game_price.find_steam_game(message)
+                game_name, link, price, discount = message.text, response[0], response[1], response[2]
+                sql_table.add_game_info(link, game_name, price, discount)
+                await MenuTelegram.create_subscribe_chose_menu(message, response)
 
 async def openai_chatting(message):
     await bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.TYPING)
@@ -169,7 +178,7 @@ async def action_with_table_users(user_id, chat_id, username, first_name):
         await bot.send_message(chat_id, f"@{user_id_name_chat[1]}, Я УДАЛЮ ТЕБЯ ИЗ ГРУППЫ если ничего не напишешь!\nУ "
                                         f"тебя "
                                         f"есть 24 часа!")
-    for user in sql_table.list_of_users_to_remove():  # [0]-id, [1]-user_name
+    for user in sql_table.get_list_of_users_to_remove():  # [0]-id, [1]-user_name
         await bot.send_message(chat_id, f"{user[1]} Именем Господнем, я изгоняю тебя из чата!")
         await bot.kick_chat_member(chat_id, user[0])
 

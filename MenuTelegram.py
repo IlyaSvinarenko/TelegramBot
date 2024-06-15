@@ -1,7 +1,6 @@
 import mongodb, SqlTables, main, GPT, time, logging, os
 from aiogram.types import Message, InlineKeyboardMarkup, \
     InlineKeyboardButton, CallbackQuery
-
 log_level = os.getenv("LOG_LEVEL", "INFO")
 logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message)s')
 
@@ -114,28 +113,49 @@ async def callback_from_funcs_menu(call: CallbackQuery):
     на 1 или 0 (вкл/выкл)"""
     sql_table_funcs = SqlTables.TableManager()
     call_data = call.data.split()  # [1] - func name, [2] - 1 or 0   (on/off)
-    if call_data[2] == '1':
-        sql_table_funcs.turn_off(call.message.chat.id, call_data[1])
-    elif call_data[2] == '0':
-        sql_table_funcs.turn_on(call.message.chat.id, call_data[1])
+    sql_table_funcs.switch(call.message.chat.id, call_data[1], call_data[2])
     await main.bot.delete_message(call.message.chat.id, call.message.message_id)
     time.sleep(1)
     await create_funcs_menu(call.message)
 
-async def create_subscribe_menu(message: Message):
-    """создаем меню"""
 
-    inline_menu = InlineKeyboardMarkup(row_width=2,
-                                       inline_keyboard=[
-                                           [InlineKeyboardButton(text='да',
-                                                                 callback_data=f'subscribe yes')],
-                                            [InlineKeyboardButton(text='нет',
-                                                                 callback_data='subscribe no')]])
-    await message.answer(f'Хотите ли подписаться на обновления по игре {message.text}', reply_markup=inline_menu)
+'''//////////////// Дальше блок меню в котором дается/не дается согласие на подписку по играм /////////////'''
 
-async def callback_from_subscribe_menu(call: CallbackQuery):
+
+async def create_subscribe_chose_menu(message: Message, response):
+    """ Создание меню subscribe_chose , которое появляется после информации об игре и предлагает подписаться на
+    обновления"""
+    sql_table = SqlTables.TableManager()
+    chat_id = message.chat.id
+    game_name = response[3] if len(response) == 4 else message.text
+    inline_menu = InlineKeyboardMarkup(row_width=1)
+    if not sql_table.get_is_subscribe(chat_id, game_name):
+        button = InlineKeyboardButton(text='Подписаться',
+                              callback_data=f'subscribe_chose subscribe')
+    else:
+        button = InlineKeyboardButton(text='Отписаться',
+                                      callback_data=f'subscribe_chose unsubscribe')
+    inline_menu.add(button)
+    await message.answer(f'{game_name}\n'
+                         f'{response[0]}\n'
+                         f'{response[1]}\n'
+                         f'{response[2]}\n'
+                         f'Хотите ли подписаться на обновления по игре {message.text}', reply_markup=inline_menu)
+
+async def callback_from_subscribe_chose_menu(call: CallbackQuery):
+    logging.info(f"in MenuTelegram / def callback_from_subscribe_menu")
+    sql_table = SqlTables.TableManager()
     call_data = call.data.split()
-    if call_data[1] == 'yes':
-        print('yes')
-    elif call_data[1] == 'no':
-        print('no')
+    splited_mesage_text = call.message.text.split('\n')
+    game_info = splited_mesage_text[:4]  # Берем первые 4 строки сообщения, они содержат в себе инфу про игру
+    game_name, link, price, discount = game_info[0], game_info[1], game_info[2], game_info[3]
+    if call_data[1] == 'subscribe':
+        sql_table.add_subscribe(call.message.chat.id, game_name)
+    elif call_data[1] == 'unsubscribe':
+        sql_table.delete_subscribe(call.message.chat.id, game_name)
+    await main.bot.delete_message(call.message.chat.id, call.message.message_id)
+    data = [link, price, discount, game_name]
+    await create_subscribe_chose_menu(call.message, data)
+
+
+'''//////////////// Дальше блок меню подписок по играм /////////////'''

@@ -33,8 +33,4 @@ async def get_game_info(game_link):
         price = price.text.strip() if price else "Цена не указана"
         discount = "Скидка отсутствует"
 
-    return {
-        'link': game_link,
-        'price': price,
-        'discount': discount
-    }
+    return game_link, price, discount

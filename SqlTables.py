@@ -5,7 +5,6 @@ import time
 log_level = os.getenv("LOG_LEVEL", "INFO")
 logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message)s')
 
-
 dataclass_chat_funcs: dict[dict] = dict()
 
 bot_id: int = os.environ.get('Son_of_Ilya_bot_id')  # Нужно для того чтобы бот сам себя случайно не добавлял в
@@ -93,7 +92,7 @@ class TableManager:
         self.coursor.execute(f"DELETE FROM users WHERE user_id = {user_id}")
         return self.connect.commit()
 
-    def list_of_users_to_remove(self):
+    def get_list_of_users_to_remove(self):
         """ Проверяет таблицу users на наличие юзеров у которых
         время_предупреждения_об_удалении(deletion_warning_time) старее одного дня,
         К каждому такому юзеру применяет удаление их данных из таблицы.
@@ -146,31 +145,24 @@ class TableManager:
         except sqlite3.Error as error:
             logging.info('Error:', error)
 
-    def turn_on(self, chat_id, func):
+    def switch(self, chat_id, func, call_data):
         """ Задает значение == 1 в поле func, где чат_ай-ди == chat_id
         Этим самым записывает состояние функции в чате как включенной"""
-        if self.coursor.execute(f"SELECT chat_id FROM funcs"
-                                f" WHERE chat_id = {chat_id}").fetchone() == None:
+        if self.coursor.execute(f"SELECT chat_id FROM funcs WHERE chat_id = {chat_id}").fetchone() == None:
             self.coursor.execute("INSERT INTO funcs (chat_id) VALUES (?)", (chat_id,))
-        self.coursor.execute(f"UPDATE funcs SET {func} = 1 WHERE chat_id = {chat_id}")
-        self.connect.commit()
-        logging.info(f"{func} - 0n   chat: {chat_id}")
-
-    def turn_off(self, chat_id, func):
-        """ Задает значение == 0 в поле func, где чат_ай-ди == chat_id
-        Этим самым записывает состояние функции в чате как выключенной"""
-        try:
+        is_on = int(call_data)
+        if is_on:
             self.coursor.execute(f"UPDATE funcs SET {func} = 0 WHERE chat_id = {chat_id}")
-        except sqlite3.Error as error:
-            logging.info('Error:', error)
+        else:
+            self.coursor.execute(f"UPDATE funcs SET {func} = 1 WHERE chat_id = {chat_id}")
         self.connect.commit()
-        logging.info(f'{func} - Off   chat: {chat_id}')
+        logging.info(f"{func} - {'0n' if is_on else 'Off'}  in chat: {chat_id}")
 
-    def is_active_func(self, cat_id, func):
+    def is_active_func(self, chat_id, func):
         """ Возвращает 1, если функция func в чате cat_id включена,
         Возвращает False если функция func в чате cat_id выключена"""
         try:
-            is_active = self.coursor.execute(f"SELECT {func} FROM funcs WHERE chat_id = {cat_id}").fetchone()[0]
+            is_active = self.coursor.execute(f"SELECT {func} FROM funcs WHERE chat_id = {chat_id}").fetchone()[0]
             self.connect.commit()
             return is_active
         except:
@@ -206,8 +198,138 @@ class TableManager:
         except Exception as error:
             logging.info(str(error))
 
+    """/////////////////////////// Дальше блок по таблице game_info ///////////////////////////////"""
+
+    def create_game_info_table(self):
+        ''' Шаблончик таблицы game_info  с полями
+                (id, game_link, game_name, price, discount)'''
+        try:
+            self.coursor.execute("""CREATE TABLE IF NOT EXISTS game_info (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_link TEXT NOT NULL,
+            game_name TEXT NOT NULL,
+            price REAL NOT NULL,
+            discount TEXT NOT NULL);""")
+            self.connect.commit()
+        except sqlite3.Error as error:
+            logging.info("ERROR", error)
+        return self.connect.commit()
+
+    def add_game_info(self, game_link, game_name, price, discount):
+        try:
+            self.coursor.execute("INSERT INTO game_info "
+                                 "(game_link, game_name, price, discount)"
+                                 " VALUES (?, ?, ?, ?)",
+                                 (game_link, game_name, price, discount))
+        except sqlite3.Error as error:
+            logging.info("ERROR", error)
+        return self.connect.commit()
+
+    def update_one_game_info(self, game_link, price, discount):
+        try:
+            self.coursor.execute("UPDATE game_info SET "
+                                 "price = ?, discount = ? WHERE "
+                                 "game_link = ?",
+                                 (price, discount, game_link))
+        except sqlite3.Error as error:
+            logging.info("ERROR", error)
+        return self.connect.commit()
+
+    def get_game_info(self, game_name):
+        try:
+            result = self.coursor.execute(f"SELECT * FROM game_info WHERE game_name = ?", (game_name,)).fetchone()
+            if result:
+                return result
+            else:
+                return False
+        except sqlite3.Error as error:
+            logging.info("ERROR", error)
+            return False
+
+    def delete_game_info(self, game_name):
+        try:
+            self.coursor.execute(f"DELETE FROM game_info WHERE game_name = ?", (game_name,))
+        except sqlite3.Error as error:
+            logging.info("ERROR", error)
+        return self.connect.commit()
+    """/////////////////////////// Дальше блок по таблице subscribes ///////////////////////////////"""
+
+    def create_subscribes_table(self):
+        ''' Шаблончик таблицы subscribes  с полями
+        (id, chat_id, game_id)'''
+        try:
+            self.coursor.execute("""CREATE TABLE IF NOT EXISTS subscribes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            chat_id INT NOT NULL,
+            game_id INT,
+            FOREIGN KEY (game_id) REFERENCES games (game_id));""")
+            self.connect.commit()
+        except sqlite3.Error as error:
+            logging.info("ERROR", error)
+
+    def add_subscribe(self, chat_id, game_name):
+        logging.info(f"in SqlTables / def add_subscribe:"
+                     f"chat_id, game_id == "
+                     f"{chat_id, game_name}")
+        try:
+            game_id = self.coursor.execute(f"SELECT id FROM game_info WHERE game_name = ?", (game_name,)).fetchone()[0]
+            self.coursor.execute("INSERT INTO subscribes "
+                                 "(chat_id, game_id)"
+                                 " VALUES (?, ?)",
+                                 (chat_id, game_id))
+        except sqlite3.Error as error:
+            logging.info("Error", error)
+            return False
+        return self.connect.commit()
+
+    def delete_subscribe(self, chat_id, game_name):
+        logging.info(f"in SqlTables / def delete_subscribe:"
+                     f"chat_id, game_name == "
+                     f"{chat_id, game_name}")
+        try:
+            game_id = self.coursor.execute(f"SELECT id FROM game_info WHERE game_name = ?", (game_name,)).fetchone()[0]
+            self.coursor.execute(f"DELETE FROM subscribes WHERE chat_id = {chat_id} AND game_id = {game_id}")
+        except sqlite3.Error as error:
+            logging.info("Error", error)
+            return False
+        return self.connect.commit()
+
+    def get_is_subscribe(self, chat_id, game_name):
+        logging.info(f"in SqlTables / def get_is_subscribe:"
+                     f"chat_id, game_name == "
+                     f"{chat_id, game_name}")
+        try:
+            game_id = self.coursor.execute(f"SELECT id FROM game_info WHERE game_name = ?", (game_name,)).fetchone()[0]
+            result = self.coursor.execute(f"SELECT * FROM subscribes WHERE chat_id = {chat_id} AND game_id = {game_id}").fetchone()
+            if result:
+                return True
+            else:
+                return False
+        except sqlite3.Error as error:
+            logging.info("Error", error)
+            return False
+
+    def get_all_subscribes_in_chat(self, chat_id):
+        logging.info(f"in SqlTables / def get_all_subscribes_in_chat:"
+                     f"chat_id == "
+                     f"{chat_id}")
+        try:
+            # game_ids = self.coursor.execute(f"SELECT game_id FROM subscribes WHERE chat_id = {chat_id}").fetchall()
+            # print(game_ids)
+            games_info = self.coursor.execute(f"SELECT * FROM game_info WHERE id IN (SELECT game_id FROM subscribes "
+                                              f"WHERE chat_id = {chat_id})").fetchall()
+            print(games_info)
+            if games_info:
+                return games_info
+            else:
+                return False
+        except sqlite3.Error as error:
+            logging.info("Error", error)
+
+
 
 object = TableManager()
 object.create_table_funcs()
 object.create_table_users()
-object.add_func_column("game_price")
+object.create_subscribes_table()
+object.create_game_info_table()
