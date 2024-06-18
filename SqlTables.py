@@ -248,6 +248,14 @@ class TableManager:
             logging.info("ERROR", error)
         return self.connect.commit()
 
+    def get_all_game_info(self):
+        try:
+            result = self.coursor.execute("SELECT * FROM game_info")
+            return result.fetchall()
+        except sqlite3.Error as error:
+            logging.info("ERROR: %s", error)
+            return []
+
     def get_game_info(self, game_name):
         logging.info(f"in SqlTables / def get_game_info:"
                      f"game_name == "
@@ -353,3 +361,4 @@ object.create_table_funcs()
 object.create_table_users()
 object.create_subscribes_table()
 object.create_game_info_table()
+print(object.get_all_game_info())

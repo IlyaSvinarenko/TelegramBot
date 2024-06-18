@@ -147,7 +147,7 @@ async def definition_func(message: Message):
             if result:
                 await MenuTelegram.create_subscribe_chose_menu(message, result)
             else:
-                response = await Parser_game_price.find_steam_game(message.text)
+                response = await Parser_game_price.find_steam_game_async(message.text)
                 link, game_name, price, discount = response[0], response[1], response[2], response[3]
                 print(f"RESPONSE ====  {response}")
                 sql_table.add_game_info(link, game_name, price, discount)
