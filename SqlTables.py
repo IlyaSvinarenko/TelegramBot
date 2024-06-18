@@ -255,6 +255,7 @@ class TableManager:
         try:
             result = self.coursor.execute(f"SELECT * FROM game_info WHERE game_name = ?", (game_name,)).fetchone()
             if result:
+                result = result[1::]
                 return result
             else:
                 return False
@@ -292,11 +293,13 @@ class TableManager:
                      f"chat_id, game_name == "
                      f"{chat_id, game_name}")
         try:
-            game_id = self.coursor.execute(f"SELECT id FROM game_info WHERE game_name = ?", (game_name,)).fetchone()[0]
-            self.coursor.execute("INSERT INTO subscribes "
-                                 "(chat_id, game_id)"
-                                 " VALUES (?, ?)",
-                                 (chat_id, game_id))
+            game_id = self.coursor.execute(f"SELECT id FROM game_info WHERE game_name = ?", (game_name,)).fetchone()
+            if game_id:
+                game_id = game_id[0]
+                self.coursor.execute("INSERT INTO subscribes "
+                                     "(chat_id, game_id)"
+                                     " VALUES (?, ?)",
+                                     (chat_id, game_id))
         except sqlite3.Error as error:
             logging.info("Error", error)
             return False

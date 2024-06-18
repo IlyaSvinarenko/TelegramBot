@@ -123,11 +123,13 @@ async def callback_from_funcs_menu(call: CallbackQuery):
 
 
 async def create_subscribe_chose_menu(message: Message, response):
+    logging.info(f"in MenuTelegram / def create_subscribe_chose_menu")
     """ Создание меню subscribe_chose_menu , которое появляется после информации об игре и предлагает подписаться на
     обновления"""
     sql_table = SqlTables.TableManager()
     chat_id = message.chat.id
-    game_name = response[3] if len(response) == 4 else message.text
+    game_name = response[1]
+    print(f"game_name  ======= {game_name }")
     inline_menu = InlineKeyboardMarkup(row_width=1)
     if not sql_table.get_is_subscribe(chat_id, game_name):
         button = InlineKeyboardButton(text='Подписаться',
@@ -136,11 +138,11 @@ async def create_subscribe_chose_menu(message: Message, response):
         button = InlineKeyboardButton(text='Отписаться',
                                       callback_data=f'subscribe_chose unsubscribe')
     inline_menu.add(button)
-    await message.answer(f'{game_name}\n'
-                         f'{response[0]}\n'
+    await main.bot.send_message(chat_id, f'{response[0]}\n'
                          f'{response[1]}\n'
                          f'{response[2]}\n'
-                         f'Хотите ли подписаться на обновления по игре {message.text}', reply_markup=inline_menu)
+                         f'{response[3]}\n'
+                         f'Хотите ли подписаться на обновления по игре {game_name}?', reply_markup=inline_menu)
 
 async def callback_from_subscribe_chose_menu(call: CallbackQuery):
     logging.info(f"in MenuTelegram / def callback_from_subscribe_chose_menu")
@@ -148,13 +150,13 @@ async def callback_from_subscribe_chose_menu(call: CallbackQuery):
     call_data = call.data.split()
     splited_mesage_text = call.message.text.split('\n')
     game_info = splited_mesage_text[:4]  # Берем первые 4 строки сообщения, они содержат в себе инфу про игру
-    game_name, link, price, discount = game_info[0], game_info[1], game_info[2], game_info[3]
+    link, game_name, price, discount = game_info[0], game_info[1], game_info[2], game_info[3]
     if call_data[1] == 'subscribe':
         sql_table.add_subscribe(call.message.chat.id, game_name)
     elif call_data[1] == 'unsubscribe':
         sql_table.delete_subscribe(call.message.chat.id, game_name)
     await main.bot.delete_message(call.message.chat.id, call.message.message_id)
-    data = [link, price, discount, game_name]
+    data = [link, game_name, price, discount]
     await create_subscribe_chose_menu(call.message, data)
 
 

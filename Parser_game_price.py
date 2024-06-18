@@ -12,13 +12,13 @@ async def find_steam_game(game_name):
     soup = BeautifulSoup(response.text, 'html.parser')
     game_link = soup.find('a', class_='search_result_row')['href']
     if game_link:
-        game_info = get_game_info(game_link)
+        game_info = get_game_info(game_name, game_link)
         return await game_info
     else:
         return "Игра не найдена"
 
 
-async def get_game_info(game_link):
+async def get_game_info(game_name, game_link):
     game_response = requests.get(game_link)
     game_soup = BeautifulSoup(game_response.text, 'html.parser')
 
@@ -33,4 +33,4 @@ async def get_game_info(game_link):
         price = price.text.strip() if price else "Цена не указана"
         discount = "Скидка отсутствует"
 
-    return game_link, price, discount
+    return game_link, game_name, price, discount
