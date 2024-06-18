@@ -25,10 +25,12 @@ class TableManager:
     """/////////////////////////// Дальше универсальный блок для таблиц users и funcs ///////////////////////////////"""
 
     def delete_table(self, table_name):
+        logging.info(f'in SqlTables / def delete_table:  table_name == {table_name}')
         self.coursor.execute(f"DROP TABLE IF EXISTS {table_name}")
         logging.info(" ТЫ ЗАЧЕМ ТАБЛИЦУ УДАЛИЛ!!?!?!?")
 
     def clear_table(self, table_name):
+        logging.info(f'in SqlTables / def clear_table: table_name == {table_name}')
         self.coursor.execute(f"DELETE FROM {table_name}")
         logging.info(f"table {table_name} cleared")
         return self.connect.commit()
@@ -36,6 +38,7 @@ class TableManager:
     """/////////////////////////// Дальше блок по таблице users ///////////////////////////////"""
 
     def add_user(self, user_id, username, chat_id):
+        logging.info(f'in SqlTables / def add_user:  user_id, username, chat_id == {user_id, username, chat_id}')
         current_time_sec = time.time()
         UTC_Current_time = time.strftime("%d/%m/%Y, %H:%M:%S", time.localtime(current_time_sec))
         if user_id == bot_id:  # Это чтобы бот не добавлял сам себя в таблицу
@@ -53,6 +56,7 @@ class TableManager:
         return self.connect.commit()
 
     def get_user_info(self, user_id):
+        logging.info(f'in SqlTables / def get_user_info:  user_id== {user_id}')
         result = self.coursor.execute(f"SELECT * FROM users WHERE user_id = {user_id}")
         result = result.fetchone()
         if result is None:
@@ -61,6 +65,7 @@ class TableManager:
             return result
 
     def update_last_aktivity(self, user_id, chat_id):
+        logging.info(f'in SqlTables / def update_last_aktivity:  user_id, chat_id == { user_id, chat_id}')
         """ Думаю по названию понятно что происходит """
         current_time_sec = time.time()
         UTC_Current_time = time.strftime("%d/%m/%Y, %H:%M:%S", time.localtime(current_time_sec))
@@ -73,6 +78,7 @@ class TableManager:
         return self.connect.commit()
 
     def find_not_active_users(self, chat_id):
+        logging.info(f'in SqlTables / def find_not_active_users: chat_id == {chat_id}')
         """ Находит юзеров в таблице users у которых дата последней активности старее 30-ти дней,
         задает таким юзерам deletion_warning_time == текущему времени,
         и возвращает сет из кортежей (user_id, user_name, chat_id)
@@ -93,6 +99,7 @@ class TableManager:
         return self.connect.commit()
 
     def get_list_of_users_to_remove(self):
+        logging.info(f'in SqlTables / def get_list_of_users_to_remove')
         """ Проверяет таблицу users на наличие юзеров у которых
         время_предупреждения_об_удалении(deletion_warning_time) старее одного дня,
         К каждому такому юзеру применяет удаление их данных из таблицы.
@@ -100,6 +107,7 @@ class TableManager:
         current_time_sec = time.time()
 
         def del_user(user_id):
+            logging.info(f'in SqlTables / def del_user: user_id == {user_id}')
             self.coursor.execute(f"DELETE FROM users WHERE user_id = {user_id}")
             return self.connect.commit()
 
@@ -146,6 +154,7 @@ class TableManager:
             logging.info('Error:', error)
 
     def switch(self, chat_id, func, call_data):
+        logging.info(f'in SqlTables / def switch: chat_id, func, call_data == {chat_id, func, call_data}')
         """ Задает значение == 1 в поле func, где чат_ай-ди == chat_id
         Этим самым записывает состояние функции в чате как включенной"""
         if self.coursor.execute(f"SELECT chat_id FROM funcs WHERE chat_id = {chat_id}").fetchone() == None:
@@ -159,6 +168,7 @@ class TableManager:
         logging.info(f"{func} - {'0n' if is_on else 'Off'}  in chat: {chat_id}")
 
     def is_active_func(self, chat_id, func):
+        logging.info(f'in SqlTables / def is_active_func: chat_id, func == {chat_id, func}')
         """ Возвращает 1, если функция func в чате cat_id включена,
         Возвращает False если функция func в чате cat_id выключена"""
         try:
@@ -170,7 +180,7 @@ class TableManager:
             return False
 
     def get_all_funcs_info_in_chat(self, chat_id):
-        logging.info(' in sql get_all_funcs_info_in_chat: ')
+        logging.info(f'in SqlTables / def get_all_funcs_info_in_chat: chat_id == {chat_id}')
         """Возвращает словарь в котором (ключ = название функции, значение = 1 или 0)
         Если значение == 1 --> значит функция в чате(chat_id) включена
         Если значение == 0 --> значит функция в чате(chat_id) ВЫключена"""
@@ -216,6 +226,9 @@ class TableManager:
         return self.connect.commit()
 
     def add_game_info(self, game_link, game_name, price, discount):
+        logging.info(f"in SqlTables / def ddd_game_info:"
+                     f"game_link, game_name, price, discount == "
+                     f"{game_link, game_name, price, discount}")
         try:
             self.coursor.execute("INSERT INTO game_info "
                                  "(game_link, game_name, price, discount)"
@@ -236,6 +249,9 @@ class TableManager:
         return self.connect.commit()
 
     def get_game_info(self, game_name):
+        logging.info(f"in SqlTables / def get_game_info:"
+                     f"game_name == "
+                     f"{game_name}")
         try:
             result = self.coursor.execute(f"SELECT * FROM game_info WHERE game_name = ?", (game_name,)).fetchone()
             if result:
@@ -247,11 +263,15 @@ class TableManager:
             return False
 
     def delete_game_info(self, game_name):
+        logging.info(f"in SqlTables / def delete_game_info:"
+                     f"game_name == "
+                     f"{game_name}")
         try:
             self.coursor.execute(f"DELETE FROM game_info WHERE game_name = ?", (game_name,))
         except sqlite3.Error as error:
             logging.info("ERROR", error)
         return self.connect.commit()
+
     """/////////////////////////// Дальше блок по таблице subscribes ///////////////////////////////"""
 
     def create_subscribes_table(self):
@@ -269,7 +289,7 @@ class TableManager:
 
     def add_subscribe(self, chat_id, game_name):
         logging.info(f"in SqlTables / def add_subscribe:"
-                     f"chat_id, game_id == "
+                     f"chat_id, game_name == "
                      f"{chat_id, game_name}")
         try:
             game_id = self.coursor.execute(f"SELECT id FROM game_info WHERE game_name = ?", (game_name,)).fetchone()[0]
@@ -314,11 +334,8 @@ class TableManager:
                      f"chat_id == "
                      f"{chat_id}")
         try:
-            # game_ids = self.coursor.execute(f"SELECT game_id FROM subscribes WHERE chat_id = {chat_id}").fetchall()
-            # print(game_ids)
             games_info = self.coursor.execute(f"SELECT * FROM game_info WHERE id IN (SELECT game_id FROM subscribes "
                                               f"WHERE chat_id = {chat_id})").fetchall()
-            print(games_info)
             if games_info:
                 return games_info
             else:
