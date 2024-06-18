@@ -123,7 +123,7 @@ async def callback_from_funcs_menu(call: CallbackQuery):
 
 
 async def create_subscribe_chose_menu(message: Message, response):
-    """ Создание меню subscribe_chose , которое появляется после информации об игре и предлагает подписаться на
+    """ Создание меню subscribe_chose_menu , которое появляется после информации об игре и предлагает подписаться на
     обновления"""
     sql_table = SqlTables.TableManager()
     chat_id = message.chat.id
@@ -143,7 +143,7 @@ async def create_subscribe_chose_menu(message: Message, response):
                          f'Хотите ли подписаться на обновления по игре {message.text}', reply_markup=inline_menu)
 
 async def callback_from_subscribe_chose_menu(call: CallbackQuery):
-    logging.info(f"in MenuTelegram / def callback_from_subscribe_menu")
+    logging.info(f"in MenuTelegram / def callback_from_subscribe_chose_menu")
     sql_table = SqlTables.TableManager()
     call_data = call.data.split()
     splited_mesage_text = call.message.text.split('\n')
@@ -159,3 +159,31 @@ async def callback_from_subscribe_chose_menu(call: CallbackQuery):
 
 
 '''//////////////// Дальше блок меню подписок по играм /////////////'''
+
+async def create_subscribes_menu(message: Message):
+    logging.info(f"in MenuTelegram / def create_subscribes_menu")
+    sql_table = SqlTables.TableManager()
+    chat_id = message.chat.id
+    game_info = sql_table.get_all_subscribes_in_chat(chat_id)
+    game_names = [i[2] for i in game_info]
+
+    inline_menu = InlineKeyboardMarkup(row_width=1,
+                                       inline_keyboard=[
+                                           [InlineKeyboardButton(text=f'{name}',
+                                                                 callback_data=f'subscribes {name}')
+                                            ] for name in game_names])
+    await message.answer(f'Кликните по названию игры чтобы отменить подписку', reply_markup=inline_menu)
+
+async def callback_from_subscribes_menu(call: CallbackQuery):
+    logging.info(f"in MenuTelegram / def callback_from_subscribes_menu")
+    sql_table = SqlTables.TableManager()
+    chat_id = call.message.chat.id
+    call_data = call.data.split()
+    game_name = ' '.join(call_data[1::])
+    sql_table.delete_subscribe(chat_id, game_name)
+    await main.bot.delete_message(chat_id, call.message.message_id)
+    await create_subscribes_menu(call.message)
+
+
+
+

@@ -17,11 +17,7 @@ logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message
 in_creating_context = {}
 
 '''/////////////// Перехватчики команд для вызовов меню и колбеков от меню //////////////////'''
-@dp.message_handler(commands=['subscribe'])
-async def get_subscribe_menu(message: Message):
-    sql_table = SqlTables.TableManager()
-    result = sql_table.get_all_subscribes_in_chat(message.chat.id)
-    await message.answer(result)
+
 
 @dp.message_handler(lambda message: message.text.startswith('img'))
 async def make_image(message: Message):
@@ -30,16 +26,11 @@ async def make_image(message: Message):
     image_byte_arr = await GPT.get_image_byte_arr(prompt)
     await bot.send_photo(message.chat.id, photo=image_byte_arr)
 
-
-@dp.message_handler(commands=['contexts'])
-async def get_contexts_menu(message: Message):
-    logging.info('in main / def get_contexts_menu')
-    if in_creating_context.get(str(message.chat.id)):
-        in_creating_context[(str(message.chat.id))] = 0
-    if GPT.current_contexts.get(str(message.chat.id)):
-        del GPT.current_contexts[(str(message.chat.id))]
-    await MenuTelegram.create_contexts_menu(message)
-
+@dp.callback_query_handler(lambda query: query.data.startswith('subscribes'))
+async def callback_from_subscribes_menu(call: CallbackQuery):
+    logging.info(f'in main / def callback_from_subscribes_menus: \n'
+                 f'callback == {call}')
+    await MenuTelegram.callback_from_subscribes_menu(call)
 
 @dp.callback_query_handler(lambda query: query.data.startswith('contexts'))
 async def callback_from_contexts_menu(call: CallbackQuery):
@@ -59,18 +50,31 @@ async def callback_from_delete_menu(call: CallbackQuery):
 async def callback_from_subscribe_menu(call: CallbackQuery):
     await MenuTelegram.callback_from_subscribe_chose_menu(call)
 
-@dp.message_handler(commands=['menu'])
-async def get_funcs_menu(message: Message):
-    logging.info('in main / def get_funcs_menu')
-    await MenuTelegram.create_funcs_menu(message)
-
-
 @dp.callback_query_handler(lambda query: query.data.startswith('funcs'))
 async def callback_from_funcs_menu(call: CallbackQuery):
     logging.info(f'in main / def callback_from_funcs_menu: \n'
                  f'callback == {call}')
     await MenuTelegram.callback_from_funcs_menu(call)
 
+@dp.message_handler(commands=['subscribe'])
+async def get_subscribe_menu(message: Message):
+    sql_table = SqlTables.TableManager()
+    result = sql_table.get_all_subscribes_in_chat(message.chat.id)
+    await MenuTelegram.create_subscribes_menu(message)
+
+@dp.message_handler(commands=['contexts'])
+async def get_contexts_menu(message: Message):
+    logging.info('in main / def get_contexts_menu')
+    if in_creating_context.get(str(message.chat.id)):
+        in_creating_context[(str(message.chat.id))] = 0
+    if GPT.current_contexts.get(str(message.chat.id)):
+        del GPT.current_contexts[(str(message.chat.id))]
+    await MenuTelegram.create_contexts_menu(message)
+
+@dp.message_handler(commands=['menu'])
+async def get_funcs_menu(message: Message):
+    logging.info('in main / def get_funcs_menu')
+    await MenuTelegram.create_funcs_menu(message)
 
 @dp.message_handler(commands=['help', 'start'])
 async def help(message: Message):
