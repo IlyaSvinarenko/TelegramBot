@@ -56,7 +56,7 @@ async def callback_from_funcs_menu(call: CallbackQuery):
                  f'callback == {call}')
     await MenuTelegram.callback_from_funcs_menu(call)
 
-@dp.message_handler(commands=['subscribe'])
+@dp.message_handler(commands=['subscribes'])
 async def get_subscribe_menu(message: Message):
     sql_table = SqlTables.TableManager()
     result = sql_table.get_all_subscribes_in_chat(message.chat.id)
