@@ -1,9 +1,10 @@
 import openai, os, mongodb, requests, logging
 import io
 from aiogram import types
+from anthropic import Anthropic
 
-openai.api_key = os.environ.get("openai_api_key")
-
+# openai.api_key = os.environ.get("openai_api_key")
+anthropic_key = os.environ.get("openai_api_key")
 log_level = os.getenv("LOG_LEVEL", "INFO")
 logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message)s')
 
@@ -38,6 +39,19 @@ async def get_response(message_text, chat_id, in_creating_process=0):
 
 
 async def get_answer(messages):
+    try:
+        client = Anthropic(
+            api_key=anthropic_key)
+
+        message = client.messages.create(
+            max_tokens=1024,
+            messages=messages,
+            model="claude-3-5-sonnet-latest",
+        )
+        answer = message.content[0].text
+    except Exception as error:
+        logging.info(f'in GPT / def get_answer: \n '
+                     f'ERROR == {error.error}')
     # try:
     #     response = openai.ChatCompletion.create(
     #         model="gpt-4-1106-preview",#"gpt-3.5-turbo",
@@ -49,7 +63,7 @@ async def get_answer(messages):
     # except openai.error.OpenAIError as error:
     #     logging.info(f'in GPT / def create_delete_menu: \n '
     #                  f'ERROR == {error.error}')
-    answer = "Это тестовый ответ на все сообщения от пользователя"
+    # answer = "Это тестовый ответ на все сообщения от пользователя"
     return answer
 
 
@@ -76,10 +90,10 @@ async def prompt_editor_for_img_generator(base_prompt):
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": "Help me to make a query for DALL-E 3, I will give you a simple query, and you have to make such a prompt that the final quote will be better, better, more aesthetic, more beautiful."},
+            {"role": "system",
+             "content": "Help me to make a query for DALL-E 3, I will give you a simple query, and you have to make such a prompt that the final quote will be better, better, more aesthetic, more beautiful."},
             {"role": "user", "content": f"{base_prompt}"}
         ]
     )
     new_prompt = response['choices'][0]['message']['content']
     return new_prompt
-
