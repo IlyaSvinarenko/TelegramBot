@@ -4,7 +4,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 log_level = os.getenv("LOG_LEVEL", "INFO")
 logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(message)s')
-
+# docker pull mongo:latest
+# docker run --name mongodb-container -d -p 27017:27017 -e MONGO_INITDB_DATABASE=chats_id mongo:latest
 
 class MongoForBotManager:
     def __init__(self):
